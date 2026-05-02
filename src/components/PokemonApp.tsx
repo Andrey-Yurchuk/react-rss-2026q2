@@ -60,14 +60,14 @@ export class PokemonApp extends Component<object, PokemonAppState> {
         err instanceof ApiRequestError
           ? err.message
           : 'Unable to reach the Pokemon API. Check your connection.';
-      this.setState({
+      this.setState((prev) => ({
         loading: false,
         error: message,
         items: [],
-        ...(options.persistToStorage
-          ? { lastSubmittedQuery: normalizedQuery }
-          : {}),
-      });
+        lastSubmittedQuery: options.persistToStorage
+          ? normalizedQuery
+          : prev.lastSubmittedQuery,
+      }));
       if (options.persistToStorage) {
         localStorage.setItem(POKEMON_SEARCH_STORAGE_KEY, normalizedQuery);
       }
