@@ -1,9 +1,9 @@
 import userEvent from '@testing-library/user-event';
 import type { ComponentProps } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { POKEMON_SEARCH_STORAGE_KEY } from '../constants';
-import { seedLocalStorage } from '../test-utils/mocks';
-import { render, screen } from '../test-utils/render';
+import { POKEMON_SEARCH_STORAGE_KEY } from '../../constants';
+import { seedLocalStorage } from '../../test-utils/mocks';
+import { render, screen } from '../../test-utils/render';
 import { Search } from './Search';
 
 function createProps(overrides?: Partial<ComponentProps<typeof Search>>) {

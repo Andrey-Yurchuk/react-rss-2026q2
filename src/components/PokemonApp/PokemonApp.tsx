@@ -1,14 +1,14 @@
 import { Component } from 'react';
-import { POKEMON_SEARCH_STORAGE_KEY } from '../constants';
+import { POKEMON_SEARCH_STORAGE_KEY } from '../../constants';
 import {
   ApiRequestError,
   loadPokemonResults,
   type PokemonCardModel,
-} from '../services/pokemonApi';
-import { CardList } from './CardList';
-import { CrashOnRender } from './CrashOnRender';
-import { Search } from './Search';
-import '../App.css';
+} from '../../services/pokemonApi';
+import { CardList } from '../CardList';
+import { CrashOnRender } from '../CrashOnRender';
+import { Search } from '../Search';
+import '../../App.css';
 
 type PokemonAppState = {
   searchInput: string;

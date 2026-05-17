@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { render, screen } from '../test-utils/render';
+import { render, screen } from '../../test-utils/render';
 import { Card } from './Card';
 
 describe('Card', () => {

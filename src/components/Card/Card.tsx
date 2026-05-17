@@ -1,4 +1,4 @@
-import type { PokemonCardModel } from '../services/pokemonApi';
+import type { PokemonCardModel } from '../../services/pokemonApi';
 
 type CardProps = {
   item: PokemonCardModel;

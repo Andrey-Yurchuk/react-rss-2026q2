@@ -1,5 +1,5 @@
 import { Component, type FormEvent } from 'react';
-import { POKEMON_SEARCH_STORAGE_KEY } from '../constants';
+import { POKEMON_SEARCH_STORAGE_KEY } from '../../constants';
 
 export type SearchProps = {
   value: string;

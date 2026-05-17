@@ -1,11 +1,11 @@
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { POKEMON_SEARCH_STORAGE_KEY } from '../constants';
-import { seedLocalStorage } from '../test-utils/mocks';
-import { render, screen, waitFor } from '../test-utils/render';
+import { POKEMON_SEARCH_STORAGE_KEY } from '../../constants';
+import { seedLocalStorage } from '../../test-utils/mocks';
+import { render, screen, waitFor } from '../../test-utils/render';
 import { PokemonApp } from './PokemonApp';
 
-vi.mock('../services/pokemonApi', () => ({
+vi.mock('../../services/pokemonApi', () => ({
   ApiRequestError: class ApiRequestError extends Error {
     status: number;
 
@@ -18,7 +18,7 @@ vi.mock('../services/pokemonApi', () => ({
   loadPokemonResults: vi.fn(),
 }));
 
-import { ApiRequestError, loadPokemonResults } from '../services/pokemonApi';
+import { ApiRequestError, loadPokemonResults } from '../../services/pokemonApi';
 
 const loadPokemonResultsMock = vi.mocked(loadPokemonResults);
 
