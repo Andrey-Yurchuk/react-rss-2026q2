@@ -1,13 +1,16 @@
 import { Component, type ReactNode } from 'react';
+import { BrowserRouter } from 'react-router-dom';
 import { AppErrorBoundary } from './components/AppErrorBoundary';
-import { PokemonApp } from './components/PokemonApp';
+import { AppRoutes } from './routes/AppRoutes';
 
 export default class App extends Component {
   render(): ReactNode {
     return (
-      <AppErrorBoundary>
-        <PokemonApp />
-      </AppErrorBoundary>
+      <BrowserRouter>
+        <AppErrorBoundary>
+          <AppRoutes />
+        </AppErrorBoundary>
+      </BrowserRouter>
     );
   }
 }
