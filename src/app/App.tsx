@@ -1,7 +1,7 @@
 import { Component, type ReactNode } from 'react';
 import { BrowserRouter } from 'react-router-dom';
-import { AppErrorBoundary } from './components/AppErrorBoundary';
-import { AppRoutes } from './routes/AppRoutes';
+import { AppErrorBoundary } from '../components/AppErrorBoundary/index.ts';
+import { AppRoutes } from '../routes/AppRoutes';
 
 export default class App extends Component {
   render(): ReactNode {

@@ -1,5 +1,5 @@
 import type { PokemonCardModel } from '../../services/pokemonApi';
-import { Card } from '../Card';
+import { Card } from '../Card/index.ts';
 
 type CardListProps = {
   items: PokemonCardModel[];

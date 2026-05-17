@@ -5,10 +5,10 @@ import {
   loadPokemonResults,
   type PokemonCardModel,
 } from '../../services/pokemonApi';
-import { CardList } from '../CardList';
-import { CrashOnRender } from '../CrashOnRender';
-import { Search } from '../Search';
-import '../../App.css';
+import { CardList } from '../CardList/index.ts';
+import { CrashOnRender } from '../CrashOnRender/index.ts';
+import { Search } from '../Search/index.ts';
+import '../../app/App.css';
 
 type PokemonAppState = {
   searchInput: string;

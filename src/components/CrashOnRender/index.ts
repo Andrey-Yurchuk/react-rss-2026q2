@@ -1,1 +1,1 @@
-export { CrashOnRender } from './CrashOnRender';
+export { CrashOnRender } from './CrashOnRender.tsx';

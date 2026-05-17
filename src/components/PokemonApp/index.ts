@@ -1,1 +1,1 @@
-export { PokemonApp } from './PokemonApp';
+export { PokemonApp } from './PokemonApp.tsx';

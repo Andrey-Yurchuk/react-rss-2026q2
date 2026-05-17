@@ -1,10 +1,10 @@
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { createConsoleErrorSpy } from './test-utils/mocks';
-import { render, screen } from './test-utils/render';
+import { createConsoleErrorSpy } from '../test-utils/mocks';
+import { render, screen } from '../test-utils/render';
 import App from './App';
 
-vi.mock('./services/pokemonApi', () => ({
+vi.mock('../services/pokemonApi', () => ({
   ApiRequestError: class ApiRequestError extends Error {
     status: number;
 

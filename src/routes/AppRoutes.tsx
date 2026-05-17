@@ -1,7 +1,7 @@
 import { Route, Routes } from 'react-router-dom';
-import { PokemonApp } from '../components/PokemonApp';
-import { AboutPage } from '../pages/AboutPage/AboutPage';
-import { NotFoundPage } from '../pages/NotFoundPage/NotFoundPage';
+import { PokemonApp } from '../components/PokemonApp/index.ts';
+import { AboutPage } from '../pages/AboutPage/index.ts';
+import { NotFoundPage } from '../pages/NotFoundPage/index.ts';
 
 export function AppRoutes() {
   return (
