@@ -1,5 +1,7 @@
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
+import { AppRoutes } from '../routes/AppRoutes';
 import { createConsoleErrorSpy } from '../test-utils/mocks';
 import { render, screen } from '../test-utils/render';
 import App from './App';
@@ -44,5 +46,23 @@ describe('App', () => {
     expect(
       screen.getByRole('link', { name: /rs school reactjs course/i })
     ).toHaveAttribute('href', 'https://rs.school/courses/reactjs');
+  });
+
+  it('shows 404 page for unknown local routes', () => {
+    render(
+      <MemoryRouter initialEntries={['/unknown-route']}>
+        <AppRoutes />
+      </MemoryRouter>
+    );
+
+    expect(
+      screen.getByRole('heading', { name: /page not found/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/the page you are looking for does not exist/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: /back to pokemon search/i })
+    ).toHaveAttribute('href', '/?page=1');
   });
 });
