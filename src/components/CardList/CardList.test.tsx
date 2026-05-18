@@ -8,10 +8,12 @@ describe('CardList', () => {
       <CardList
         items={[
           {
+            id: 25,
             name: 'pikachu',
             description: 'Types: electric. Height: 4, weight: 60.',
           },
           {
+            id: 1,
             name: 'bulbasaur',
             description: 'Types: grass, poison. Height: 7, weight: 69.',
           },

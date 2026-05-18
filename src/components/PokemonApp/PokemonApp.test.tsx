@@ -25,32 +25,42 @@ const loadPokemonResultsMock = vi.mocked(loadPokemonResults);
 describe('PokemonApp', () => {
   it('loads initial data from hydrated localStorage value', async () => {
     seedLocalStorage(POKEMON_SEARCH_STORAGE_KEY, '  PIKACHU ');
-    loadPokemonResultsMock.mockResolvedValueOnce([
-      { name: 'pikachu', description: 'Types: electric. Height: 4, weight: 60.' },
-    ]);
+    loadPokemonResultsMock.mockResolvedValueOnce({
+      items: [
+        {
+          id: 25,
+          name: 'pikachu',
+          description: 'Types: electric. Height: 4, weight: 60.',
+        },
+      ],
+      totalCount: 1,
+    });
 
     render(<PokemonApp />);
 
     await waitFor(() => {
-      expect(loadPokemonResultsMock).toHaveBeenCalledWith('pikachu');
+      expect(loadPokemonResultsMock).toHaveBeenCalledWith('pikachu', 1);
     });
     expect(screen.getByRole('heading', { name: 'pikachu' })).toBeInTheDocument();
   });
 
   it('shows loading state while request is pending', async () => {
-    let resolveRequest: (value: Array<{ name: string; description: string }>) => void =
-      () => undefined;
-    const pendingRequest = new Promise<Array<{ name: string; description: string }>>(
-      (resolve) => {
-        resolveRequest = resolve;
-      }
-    );
+    let resolveRequest: (value: {
+      items: Array<{ id: number; name: string; description: string }>;
+      totalCount: number;
+    }) => void = () => undefined;
+    const pendingRequest = new Promise<{
+      items: Array<{ id: number; name: string; description: string }>;
+      totalCount: number;
+    }>((resolve) => {
+      resolveRequest = resolve;
+    });
     loadPokemonResultsMock.mockReturnValueOnce(pendingRequest);
 
     render(<PokemonApp />);
 
     expect(screen.getByText('Loading…')).toBeInTheDocument();
-    resolveRequest([]);
+    resolveRequest({ items: [], totalCount: 0 });
     await waitFor(() =>
       expect(screen.queryByText('Loading…')).not.toBeInTheDocument()
     );
@@ -71,14 +81,21 @@ describe('PokemonApp', () => {
   it('normalizes search query, saves it to localStorage and avoids duplicate request', async () => {
     const user = userEvent.setup();
     loadPokemonResultsMock
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([
-        { name: 'pikachu', description: 'Types: electric. Height: 4, weight: 60.' },
-      ]);
+      .mockResolvedValueOnce({ items: [], totalCount: 0 })
+      .mockResolvedValueOnce({ items: [], totalCount: 0 })
+      .mockResolvedValueOnce({
+        items: [
+          {
+            id: 25,
+            name: 'pikachu',
+            description: 'Types: electric. Height: 4, weight: 60.',
+          },
+        ],
+        totalCount: 1,
+      });
 
     render(<PokemonApp />);
-    await waitFor(() => expect(loadPokemonResultsMock).toHaveBeenCalledWith(''));
+    await waitFor(() => expect(loadPokemonResultsMock).toHaveBeenCalledWith('', 1));
 
     await user.clear(screen.getByLabelText(/search pok.mon by exact name/i));
     await user.type(
@@ -87,7 +104,9 @@ describe('PokemonApp', () => {
     );
     await user.click(screen.getByRole('button', { name: /search/i }));
 
-    await waitFor(() => expect(loadPokemonResultsMock).toHaveBeenCalledWith('pikachu'));
+    await waitFor(() =>
+      expect(loadPokemonResultsMock).toHaveBeenCalledWith('pikachu', 1)
+    );
     await waitFor(() =>
       expect(localStorage.getItem(POKEMON_SEARCH_STORAGE_KEY)).toBe('pikachu')
     );

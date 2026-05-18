@@ -14,7 +14,7 @@ vi.mock('../services/pokemonApi', () => ({
       this.status = status;
     }
   },
-  loadPokemonResults: vi.fn().mockResolvedValue([]),
+  loadPokemonResults: vi.fn().mockResolvedValue({ items: [], totalCount: 0 }),
 }));
 
 describe('App', () => {

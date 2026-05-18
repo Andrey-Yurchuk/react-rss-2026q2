@@ -39,7 +39,8 @@ export class PokemonApp extends Component<object, PokemonAppState> {
     this.setState({ loading: true, error: null });
 
     try {
-      const items = await loadPokemonResults(normalizedQuery);
+      // TODO: read page from URL (useSearchParams) instead of hardcoded 1
+      const { items } = await loadPokemonResults(normalizedQuery, 1);
       if (requestId !== this.requestSerial) {
         return;
       }

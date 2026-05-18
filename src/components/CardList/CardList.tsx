@@ -12,7 +12,7 @@ export function CardList({ items }: CardListProps) {
   return (
     <div className="card-list">
       {items.map((item) => (
-        <Card key={item.name} item={item} />
+        <Card key={item.id} item={item} />
       ))}
     </div>
   );

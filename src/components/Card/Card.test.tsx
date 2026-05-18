@@ -7,6 +7,7 @@ describe('Card', () => {
     render(
       <Card
         item={{
+          id: 25,
           name: 'pikachu',
           description: 'Types: electric. Height: 4, weight: 60.',
         }}
