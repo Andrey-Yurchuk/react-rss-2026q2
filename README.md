@@ -2,4 +2,27 @@
 
 ## RS School React course project
 
-Vite + React + TypeScript app for the RS School **class components** task: state and lifecycle live in **class components** only (no hooks). **PokeAPI** powers a first-page list and lookup by English slug or National Dex number, with **localStorage** for the last submitted query, loading and API error UI, and an **error boundary** with a button to trigger a demo error. Tooling includes **ESLint**, **Prettier**, and **Husky** (pre-commit runs `lint`).
+Vite + React + TypeScript Pokedex browser for the RS School **routing and hooks** task.
+
+**PokeAPI** powers paginated search results, a master–detail split view, and lookup by exact English name. State lives in **functional components** with hooks; **`useLocalStorage`** persists the last submitted search. **`AppErrorBoundary`** remains a class component.
+
+### Routing
+
+- `/` — search and results (`?page=1`, `?page=2&details=25`)
+- `/about` — author and course links
+- unknown paths — 404 page (React Router catch-all)
+
+### Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Local dev server |
+| `npm run build` | Production build |
+| `npm run preview` | Preview production build |
+| `npm run test` | Unit tests (Vitest) |
+| `npm run test:coverage` | Tests with coverage (statements ≥ 80%) |
+| `npm run lint` | ESLint |
+
+Tooling: **ESLint**, **Prettier**, **Husky** (pre-commit: `lint`, pre-push: `test`).
+
+Active branch for this task: **`hooks-and-routing`**.
