@@ -1,9 +1,8 @@
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { AppRoutes } from '../routes/AppRoutes';
 import { createConsoleErrorSpy } from '../test-utils/mocks';
-import { render, screen } from '../test-utils/render';
+import { render, renderWithRouter, screen } from '../test-utils/render';
 import App from './App';
 
 vi.mock('../services/pokemonApi', async (importOriginal) => {
@@ -49,11 +48,7 @@ describe('App', () => {
   });
 
   it('shows 404 page for unknown local routes', () => {
-    render(
-      <MemoryRouter initialEntries={['/unknown-route']}>
-        <AppRoutes />
-      </MemoryRouter>
-    );
+    renderWithRouter(<AppRoutes />, { route: '/unknown-route' });
 
     expect(
       screen.getByRole('heading', { name: /page not found/i })

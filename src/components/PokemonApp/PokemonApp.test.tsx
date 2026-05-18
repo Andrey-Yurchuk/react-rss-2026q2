@@ -1,9 +1,14 @@
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { POKEMON_SEARCH_STORAGE_KEY } from '../../constants';
 import { seedLocalStorage } from '../../test-utils/mocks';
-import { render, screen, waitFor } from '../../test-utils/render';
+import {
+  fireEvent,
+  renderWithRouter,
+  screen,
+  waitFor,
+} from '../../test-utils/render';
 import { PokemonDetailsPanel } from '../PokemonDetailsPanel/index.ts';
 import { PokemonApp } from './PokemonApp';
 
@@ -30,12 +35,8 @@ beforeEach(() => {
   loadPokemonByIdMock.mockReset();
 });
 
-function renderPokemonApp(initialEntry = '/?page=1') {
-  return render(
-    <MemoryRouter initialEntries={[initialEntry]}>
-      <PokemonApp />
-    </MemoryRouter>
-  );
+function renderPokemonApp(route = '/?page=1') {
+  return renderWithRouter(<PokemonApp />, { route });
 }
 
 function LocationProbe() {
@@ -43,16 +44,17 @@ function LocationProbe() {
   return <p data-testid="current-location">{location.pathname}{location.search}</p>;
 }
 
-function renderPokemonAppRoutes(initialEntry = '/?page=1') {
-  return render(
-    <MemoryRouter initialEntries={[initialEntry]}>
+function renderPokemonAppRoutes(route = '/?page=1') {
+  return renderWithRouter(
+    <>
       <Routes>
         <Route path="/" element={<PokemonApp />}>
           <Route index element={<PokemonDetailsPanel />} />
         </Route>
       </Routes>
       <LocationProbe />
-    </MemoryRouter>
+    </>,
+    { route }
   );
 }
 
@@ -274,5 +276,80 @@ describe('PokemonApp', () => {
       .toBeInTheDocument();
 
     expect(await screen.findByText('Page 1 of 2')).toBeInTheDocument();
+  });
+
+  it('resets page to 1 in the URL when search input changes', async () => {
+    const user = userEvent.setup();
+    loadPokemonResultsMock.mockResolvedValue({
+      items: [
+        {
+          id: 2,
+          name: 'pokemon-2',
+          description: 'Page 2 item.',
+        },
+      ],
+      totalCount: 40,
+    });
+
+    renderPokemonAppRoutes('/?page=2');
+
+    await screen.findByRole('heading', { name: 'pokemon-2' });
+    await user.type(screen.getByLabelText(/search pok.mon by exact name/i), 'a');
+
+    await waitFor(() =>
+      expect(screen.getByTestId('current-location')).toHaveTextContent('/?page=1')
+    );
+  });
+
+  it('closes details when clicking the main results panel', async () => {
+    loadPokemonResultsMock.mockResolvedValue({
+      items: [
+        {
+          id: 25,
+          name: 'pikachu',
+          description: 'Types: electric. Height: 4, weight: 60.',
+        },
+      ],
+      totalCount: 40,
+    });
+    loadPokemonByIdMock.mockResolvedValue({
+      id: 25,
+      name: 'pikachu',
+      description: 'Types: electric. Height: 4, weight: 60.',
+    });
+
+    renderPokemonAppRoutes('/?page=2&details=25');
+
+    expect(await screen.findByText('Pokedex #25')).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole('main', { name: /main pokemon results panel/i })
+    );
+
+    await waitFor(() =>
+      expect(screen.queryByRole('complementary', { name: /pokemon details/i })).not
+        .toBeInTheDocument()
+    );
+    expect(screen.getByTestId('current-location')).toHaveTextContent('/?page=2');
+  });
+
+  it('adds page=1 to the URL on first visit when page param is missing', async () => {
+    loadPokemonResultsMock.mockResolvedValue({ items: [], totalCount: 0 });
+
+    renderPokemonAppRoutes('/');
+
+    await waitFor(() =>
+      expect(screen.getByTestId('current-location')).toHaveTextContent('/?page=1')
+    );
+  });
+
+  it('shows generic error when list request fails unexpectedly', async () => {
+    loadPokemonResultsMock.mockRejectedValueOnce(new Error('network down'));
+
+    renderPokemonApp();
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Unable to reach the Pokemon API. Check your connection.'
+    );
   });
 });
