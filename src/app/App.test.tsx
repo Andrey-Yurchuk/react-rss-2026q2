@@ -27,4 +27,22 @@ describe('App', () => {
     ).toBeInTheDocument();
     expect(consoleErrorSpy).toHaveBeenCalled();
   });
+
+  it('navigates to About page from the main app', async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+    await user.click(screen.getByRole('link', { name: /about/i }));
+
+    expect(
+      screen.getByRole('heading', { name: /pokedex browser/i })
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /andrey yurchuk/i })).toHaveAttribute(
+      'href',
+      'https://github.com/Andrey-Yurchuk'
+    );
+    expect(
+      screen.getByRole('link', { name: /rs school reactjs course/i })
+    ).toHaveAttribute('href', 'https://rs.school/courses/reactjs');
+  });
 });
