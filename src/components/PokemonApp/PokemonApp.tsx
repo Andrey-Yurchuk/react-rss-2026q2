@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react';
+import { Link, Outlet, useNavigate, useSearchParams } from 'react-router-dom';
 import { POKEMON_SEARCH_STORAGE_KEY } from '../../constants';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 import {
@@ -18,10 +18,13 @@ import '../../app/App.css';
 export function PokemonApp() {
   const { write: writeSearchToStorage } = useLocalStorage(POKEMON_SEARCH_STORAGE_KEY);
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const requestSerialRef = useRef(0);
   const shouldPersistRef = useRef(false);
 
   const page = parsePageParam(searchParams.get('page'));
+  const selectedId = Number(searchParams.get('details'));
+  const hasDetails = Number.isInteger(selectedId) && selectedId > 0;
 
   const [searchInput, setSearchInput] = useState('');
   const [submittedQuery, setSubmittedQuery] = useState<string | null>(null);
@@ -152,10 +155,44 @@ export function PokemonApp() {
       setSearchParams((prev) => {
         const next = new URLSearchParams(prev);
         next.set('page', String(newPage));
+        if (hasDetails) {
+          next.set('details', String(selectedId));
+        }
         return next;
       });
     },
-    [setSearchParams]
+    [hasDetails, selectedId, setSearchParams]
+  );
+
+  const handleCardSelect = useCallback(
+    (id: number) => {
+      navigate({
+        pathname: '/',
+        search: `?page=${page}&details=${id}`,
+      });
+    },
+    [navigate, page]
+  );
+
+  const handleCloseDetails = useCallback(() => {
+    if (!hasDetails) {
+      return;
+    }
+    navigate({ pathname: '/', search: `?page=${page}` });
+  }, [hasDetails, navigate, page]);
+
+  const handleListPanelClick = useCallback(
+    (event: MouseEvent<HTMLElement>) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) {
+        return;
+      }
+      if (target.closest('a, button, input, select, textarea, [role="button"]')) {
+        return;
+      }
+      handleCloseDetails();
+    },
+    [handleCloseDetails]
   );
 
   const handleSimulateError = useCallback(() => {
@@ -166,54 +203,81 @@ export function PokemonApp() {
   const showPagination = !loading && !error && items.length > 0;
 
   return (
-    <div className="pokemon-app">
+    <div className={hasDetails ? 'pokemon-app pokemon-app--with-details' : 'pokemon-app'}>
       <header className="pokemon-app__header">
-        <h1 className="pokemon-app__title">Pokedex browser</h1>
-        <p className="pokemon-app__subtitle">
-          Data from{' '}
-          <a
-            className="pokemon-app__link"
-            href="https://pokeapi.co/"
-            target="_blank"
-            rel="noreferrer"
-          >
-            PokéAPI
-          </a>
-        </p>
+        <div>
+          <h1 className="pokemon-app__title">Pokedex browser</h1>
+          <p className="pokemon-app__subtitle">
+            Data from{' '}
+            <a
+              className="pokemon-app__link"
+              href="https://pokeapi.co/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              PokéAPI
+            </a>
+          </p>
+        </div>
+        <nav className="pokemon-app__nav" aria-label="Application navigation">
+          <Link className="pokemon-app__nav-link" to="/about">
+            About
+          </Link>
+        </nav>
       </header>
 
-      <section className="pokemon-app__search-section" aria-label="Search">
-        <Search
-          value={searchInput}
-          onChange={handleSearchInputChange}
-          onSearch={handleSearchClick}
-          onStorageHydrated={handleStorageHydrated}
-        />
-      </section>
+      <div className="pokemon-app__main-layout">
+        <main
+          className="pokemon-app__list-panel"
+          aria-label="Main Pokemon results panel"
+          onClick={handleListPanelClick}
+        >
+          <section className="pokemon-app__search-section" aria-label="Search">
+            <Search
+              value={searchInput}
+              onChange={handleSearchInputChange}
+              onSearch={handleSearchClick}
+              onStorageHydrated={handleStorageHydrated}
+            />
+          </section>
 
-      <section
-        className="pokemon-app__results-section"
-        aria-label="Search results"
-      >
-        {loading && (
-          <div className="loading" aria-live="polite" aria-busy="true">
-            <div className="loading__spinner" />
-            <span className="loading__label">Loading…</span>
-          </div>
-        )}
+          <section
+            className="pokemon-app__results-section"
+            aria-label="Search results"
+          >
+            {loading && (
+              <div className="loading" aria-live="polite" aria-busy="true">
+                <div className="loading__spinner" />
+                <span className="loading__label">Loading…</span>
+              </div>
+            )}
 
-        {!loading && error && (
-          <p className="results__error" role="alert">
-            {error}
-          </p>
-        )}
+            {!loading && error && (
+              <p className="results__error" role="alert">
+                {error}
+              </p>
+            )}
 
-        {!loading && !error && <CardList items={items} />}
+            {!loading && !error && (
+              <CardList
+                items={items}
+                selectedId={hasDetails ? selectedId : undefined}
+                onCardSelect={handleCardSelect}
+              />
+            )}
 
-        {showPagination && (
-          <Pagination page={page} totalPages={totalPages} onPageChange={handlePageChange} />
-        )}
-      </section>
+            {showPagination && (
+              <Pagination page={page} totalPages={totalPages} onPageChange={handlePageChange} />
+            )}
+          </section>
+        </main>
+
+        {hasDetails ? (
+          <section className="pokemon-app__details-panel">
+            <Outlet />
+          </section>
+        ) : null}
+      </div>
 
       <div className="pokemon-app__footer">
         <button

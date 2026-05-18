@@ -3,7 +3,7 @@ import { createConsoleErrorSpy } from '../../test-utils/mocks';
 import { render, screen } from '../../test-utils/render';
 import { AppErrorBoundary } from './AppErrorBoundary';
 
-function ThrowOnRender() {
+function ThrowOnRender(): never {
   throw new Error('boom');
 }
 

@@ -1,9 +1,10 @@
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { POKEMON_SEARCH_STORAGE_KEY } from '../../constants';
 import { seedLocalStorage } from '../../test-utils/mocks';
 import { render, screen, waitFor } from '../../test-utils/render';
+import { PokemonDetailsPanel } from '../PokemonDetailsPanel/index.ts';
 import { PokemonApp } from './PokemonApp';
 
 vi.mock('../../services/pokemonApi', async (importOriginal) => {
@@ -11,21 +12,46 @@ vi.mock('../../services/pokemonApi', async (importOriginal) => {
   return {
     ...actual,
     loadPokemonResults: vi.fn(),
+    loadPokemonById: vi.fn(),
   };
 });
 
-import { ApiRequestError, loadPokemonResults } from '../../services/pokemonApi';
+import {
+  ApiRequestError,
+  loadPokemonById,
+  loadPokemonResults,
+} from '../../services/pokemonApi';
 
 const loadPokemonResultsMock = vi.mocked(loadPokemonResults);
+const loadPokemonByIdMock = vi.mocked(loadPokemonById);
 
 beforeEach(() => {
   loadPokemonResultsMock.mockReset();
+  loadPokemonByIdMock.mockReset();
 });
 
 function renderPokemonApp(initialEntry = '/?page=1') {
   return render(
     <MemoryRouter initialEntries={[initialEntry]}>
       <PokemonApp />
+    </MemoryRouter>
+  );
+}
+
+function LocationProbe() {
+  const location = useLocation();
+  return <p data-testid="current-location">{location.pathname}{location.search}</p>;
+}
+
+function renderPokemonAppRoutes(initialEntry = '/?page=1') {
+  return render(
+    <MemoryRouter initialEntries={[initialEntry]}>
+      <Routes>
+        <Route path="/" element={<PokemonApp />}>
+          <Route index element={<PokemonDetailsPanel />} />
+        </Route>
+      </Routes>
+      <LocationProbe />
     </MemoryRouter>
   );
 }
@@ -126,7 +152,7 @@ describe('PokemonApp', () => {
   });
 
   it('loads results when page changes in URL', async () => {
-    loadPokemonResultsMock.mockImplementation(async (query, pageNum) => ({
+    loadPokemonResultsMock.mockImplementation(async (_query, pageNum) => ({
       items: [
         {
           id: pageNum,
@@ -147,6 +173,87 @@ describe('PokemonApp', () => {
 
     await waitFor(() => expect(loadPokemonResultsMock).toHaveBeenCalledWith('', 2));
     expect(screen.getByRole('heading', { name: 'pokemon-2' })).toBeInTheDocument();
+  });
+
+  it('opens details in the Outlet and closes them while preserving the page', async () => {
+    const user = userEvent.setup();
+    loadPokemonResultsMock.mockResolvedValue({
+      items: [
+        {
+          id: 25,
+          name: 'pikachu',
+          description: 'Types: electric. Height: 4, weight: 60.',
+        },
+      ],
+      totalCount: 40,
+    });
+    let resolveDetails: (value: {
+      id: number;
+      name: string;
+      description: string;
+    }) => void = () => undefined;
+    loadPokemonByIdMock.mockReturnValue(
+      new Promise((resolve) => {
+        resolveDetails = resolve;
+      })
+    );
+
+    renderPokemonAppRoutes('/?page=2');
+
+    expect(screen.queryByRole('complementary', { name: /pokemon details/i })).not
+      .toBeInTheDocument();
+    await screen.findByRole('heading', { name: 'pikachu' });
+
+    await user.click(screen.getByRole('button', { name: /view details for pikachu/i }));
+
+    expect(screen.getByText('Loading details…')).toBeInTheDocument();
+    resolveDetails({
+      id: 25,
+      name: 'pikachu',
+      description: 'Types: electric. Height: 4, weight: 60.',
+    });
+    expect(await screen.findByText('Pokedex #25')).toBeInTheDocument();
+    expect(screen.getByTestId('current-location')).toHaveTextContent(
+      '/?page=2&details=25'
+    );
+
+    await user.click(screen.getByRole('button', { name: /close/i }));
+
+    await waitFor(() =>
+      expect(screen.queryByRole('complementary', { name: /pokemon details/i })).not
+        .toBeInTheDocument()
+    );
+    expect(screen.getByTestId('current-location')).toHaveTextContent('/?page=2');
+  });
+
+  it('keeps the details panel open when changing page', async () => {
+    const user = userEvent.setup();
+    loadPokemonResultsMock.mockImplementation(async (_query, pageNum) => ({
+      items: [
+        {
+          id: pageNum,
+          name: `pokemon-${pageNum}`,
+          description: `Page ${pageNum} item.`,
+        },
+      ],
+      totalCount: 40,
+    }));
+    loadPokemonByIdMock.mockResolvedValue({
+      id: 1,
+      name: 'bulbasaur',
+      description: 'Types: grass, poison. Height: 7, weight: 69.',
+    });
+
+    renderPokemonAppRoutes('/?page=1&details=1');
+
+    expect(await screen.findByText('Pokedex #1')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /next/i }));
+
+    await waitFor(() => expect(loadPokemonResultsMock).toHaveBeenCalledWith('', 2));
+    expect(screen.getByText('Pokedex #1')).toBeInTheDocument();
+    expect(screen.getByTestId('current-location')).toHaveTextContent(
+      '/?page=2&details=1'
+    );
   });
 
   it('shows pagination only after items are loaded', async () => {
