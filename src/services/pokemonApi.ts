@@ -1,8 +1,14 @@
 import { LIST_PAGE_SIZE, POKEAPI_POKEMON_URL } from '../constants';
 
 export type PokemonCardModel = {
+  id: number;
   name: string;
   description: string;
+};
+
+export type PokemonListPageResult = {
+  items: PokemonCardModel[];
+  totalCount: number;
 };
 
 type PokemonTypeEntry = {
@@ -10,6 +16,7 @@ type PokemonTypeEntry = {
 };
 
 type PokemonDetailJson = {
+  id: number;
   name: string;
   height: number;
   weight: number;
@@ -22,6 +29,7 @@ type ListResultItem = {
 };
 
 type ListJson = {
+  count: number;
   results: ListResultItem[];
 };
 
@@ -56,20 +64,29 @@ function mapCard(detail: PokemonDetailJson): PokemonCardModel {
   const types = detail.types.map((t) => t.type.name).join(', ');
   const description = `Types: ${types}. Height: ${detail.height}, weight: ${detail.weight}.`;
   return {
+    id: detail.id,
     name: detail.name,
     description,
   };
 }
 
-export async function loadPokemonListPage(): Promise<PokemonCardModel[]> {
+export function totalPagesForCount(totalCount: number): number {
+  return Math.max(1, Math.ceil(totalCount / LIST_PAGE_SIZE));
+}
+
+export async function loadPokemonListPage(
+  page: number
+): Promise<PokemonListPageResult> {
+  const safePage = Number.isFinite(page) && page >= 1 ? page : 1;
+  const offset = (safePage - 1) * LIST_PAGE_SIZE;
   const listRes = await fetch(
-    `${POKEAPI_POKEMON_URL}?limit=${LIST_PAGE_SIZE}&offset=0`
+    `${POKEAPI_POKEMON_URL}?limit=${LIST_PAGE_SIZE}&offset=${offset}`
   );
   if (!listRes.ok) {
     throw new ApiRequestError(messageForStatus(listRes.status), listRes.status);
   }
   const listJson = (await listRes.json()) as ListJson;
-  const cards = await Promise.all(
+  const items = await Promise.all(
     listJson.results.map(async (item) => {
       const res = await fetch(item.url);
       if (!res.ok) {
@@ -79,7 +96,7 @@ export async function loadPokemonListPage(): Promise<PokemonCardModel[]> {
       return mapCard(detail);
     })
   );
-  return cards;
+  return { items, totalCount: listJson.count };
 }
 
 export async function loadPokemonByName(
@@ -96,11 +113,21 @@ export async function loadPokemonByName(
   return [mapCard(detail)];
 }
 
+export async function loadPokemonById(id: number): Promise<PokemonCardModel> {
+  const res = await fetch(`${POKEAPI_POKEMON_URL}/${id}`);
+  if (!res.ok) {
+    throw new ApiRequestError(messageForStatus(res.status), res.status);
+  }
+  const detail = (await res.json()) as PokemonDetailJson;
+  return mapCard(detail);
+}
+
 export async function loadPokemonResults(
-  normalizedQuery: string
-): Promise<PokemonCardModel[]> {
+  normalizedQuery: string,
+  page: number
+): Promise<PokemonListPageResult> {
   if (normalizedQuery === '') {
-    return loadPokemonListPage();
+    return loadPokemonListPage(page);
   }
   if (!isPokemonResourceSlug(normalizedQuery)) {
     throw new ApiRequestError(
@@ -108,5 +135,6 @@ export async function loadPokemonResults(
       400
     );
   }
-  return loadPokemonByName(normalizedQuery);
+  const items = await loadPokemonByName(normalizedQuery);
+  return { items, totalCount: items.length };
 }

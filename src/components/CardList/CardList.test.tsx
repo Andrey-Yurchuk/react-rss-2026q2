@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { render, screen } from '../test-utils/render';
+import { render, screen } from '../../test-utils/render';
 import { CardList } from './CardList';
 
 describe('CardList', () => {
@@ -8,10 +8,12 @@ describe('CardList', () => {
       <CardList
         items={[
           {
+            id: 25,
             name: 'pikachu',
             description: 'Types: electric. Height: 4, weight: 60.',
           },
           {
+            id: 1,
             name: 'bulbasaur',
             description: 'Types: grass, poison. Height: 7, weight: 69.',
           },
