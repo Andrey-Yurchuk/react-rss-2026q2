@@ -4,18 +4,13 @@ import { createConsoleErrorSpy } from '../test-utils/mocks';
 import { render, screen } from '../test-utils/render';
 import App from './App';
 
-vi.mock('../services/pokemonApi', () => ({
-  ApiRequestError: class ApiRequestError extends Error {
-    status: number;
-
-    constructor(message: string, status: number) {
-      super(message);
-      this.name = 'ApiRequestError';
-      this.status = status;
-    }
-  },
-  loadPokemonResults: vi.fn().mockResolvedValue({ items: [], totalCount: 0 }),
-}));
+vi.mock('../services/pokemonApi', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../services/pokemonApi')>();
+  return {
+    ...actual,
+    loadPokemonResults: vi.fn().mockResolvedValue({ items: [], totalCount: 0 }),
+  };
+});
 
 describe('App', () => {
   it('shows Error Boundary fallback after trigger button click', async () => {

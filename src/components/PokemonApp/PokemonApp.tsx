@@ -1,30 +1,55 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { POKEMON_SEARCH_STORAGE_KEY } from '../../constants';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 import {
   ApiRequestError,
   loadPokemonResults,
+  totalPagesForCount,
   type PokemonCardModel,
 } from '../../services/pokemonApi';
+import { parsePageParam } from '../../utils/urlParams';
 import { CardList } from '../CardList/index.ts';
 import { CrashOnRender } from '../CrashOnRender/index.ts';
+import { Pagination } from '../Pagination/index.ts';
 import { Search } from '../Search/index.ts';
 import '../../app/App.css';
 
 export function PokemonApp() {
   const { write: writeSearchToStorage } = useLocalStorage(POKEMON_SEARCH_STORAGE_KEY);
+  const [searchParams, setSearchParams] = useSearchParams();
   const requestSerialRef = useRef(0);
+  const shouldPersistRef = useRef(false);
+
+  const page = parsePageParam(searchParams.get('page'));
 
   const [searchInput, setSearchInput] = useState('');
+  const [submittedQuery, setSubmittedQuery] = useState<string | null>(null);
   const [lastSubmittedQuery, setLastSubmittedQuery] = useState<string | null>(null);
   const [items, setItems] = useState<PokemonCardModel[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [simulateCrash, setSimulateCrash] = useState(false);
 
+  useEffect(() => {
+    if (searchParams.has('page')) {
+      return;
+    }
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set('page', '1');
+        return next;
+      },
+      { replace: true }
+    );
+  }, [searchParams, setSearchParams]);
+
   const loadResults = useCallback(
     async (
       normalizedQuery: string,
+      pageNum: number,
       options: { persistToStorage?: boolean } = {}
     ) => {
       const requestId = ++requestSerialRef.current;
@@ -32,12 +57,15 @@ export function PokemonApp() {
       setError(null);
 
       try {
-        // TODO: read page from URL (useSearchParams) instead of hardcoded 1
-        const { items: loadedItems } = await loadPokemonResults(normalizedQuery, 1);
+        const { items: loadedItems, totalCount: count } = await loadPokemonResults(
+          normalizedQuery,
+          pageNum
+        );
         if (requestId !== requestSerialRef.current) {
           return;
         }
         setItems(loadedItems);
+        setTotalCount(count);
         setLoading(false);
         setError(null);
         setLastSubmittedQuery(normalizedQuery);
@@ -55,6 +83,7 @@ export function PokemonApp() {
         setLoading(false);
         setError(message);
         setItems([]);
+        setTotalCount(0);
         setLastSubmittedQuery((prev) =>
           options.persistToStorage ? normalizedQuery : prev
         );
@@ -66,29 +95,75 @@ export function PokemonApp() {
     [writeSearchToStorage]
   );
 
-  const handleStorageHydrated = useCallback(
-    (normalizedFromStorage: string) => {
-      setSearchInput(normalizedFromStorage);
-      void loadResults(normalizedFromStorage);
-    },
-    [loadResults]
-  );
+  useEffect(() => {
+    if (submittedQuery === null) {
+      return;
+    }
+    void loadResults(submittedQuery, page, {
+      persistToStorage: shouldPersistRef.current,
+    });
+    shouldPersistRef.current = false;
+  }, [submittedQuery, page, loadResults]);
 
-  const handleSearchInputChange = useCallback((value: string) => {
-    setSearchInput(value);
+  const handleStorageHydrated = useCallback((normalizedFromStorage: string) => {
+    setSearchInput(normalizedFromStorage);
+    setSubmittedQuery(normalizedFromStorage);
   }, []);
+
+  const handleSearchInputChange = useCallback(
+    (value: string) => {
+      setSearchInput(value);
+      if (searchParams.get('page') === '1') {
+        return;
+      }
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.set('page', '1');
+          return next;
+        },
+        { replace: true }
+      );
+    },
+    [searchParams, setSearchParams]
+  );
 
   const handleSearchClick = useCallback(() => {
     const normalized = searchInput.trim().toLowerCase();
     if (lastSubmittedQuery !== null && normalized === lastSubmittedQuery) {
       return;
     }
-    void loadResults(normalized, { persistToStorage: true });
-  }, [searchInput, lastSubmittedQuery, loadResults]);
+    shouldPersistRef.current = true;
+    if (searchParams.get('page') !== '1') {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.set('page', '1');
+          return next;
+        },
+        { replace: true }
+      );
+    }
+    setSubmittedQuery(normalized);
+  }, [searchInput, lastSubmittedQuery, searchParams, setSearchParams]);
+
+  const handlePageChange = useCallback(
+    (newPage: number) => {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.set('page', String(newPage));
+        return next;
+      });
+    },
+    [setSearchParams]
+  );
 
   const handleSimulateError = useCallback(() => {
     setSimulateCrash(true);
   }, []);
+
+  const totalPages = totalPagesForCount(totalCount);
+  const showPagination = !loading && !error && items.length > 0;
 
   return (
     <div className="pokemon-app">
@@ -134,6 +209,10 @@ export function PokemonApp() {
         )}
 
         {!loading && !error && <CardList items={items} />}
+
+        {showPagination && (
+          <Pagination page={page} totalPages={totalPages} onPageChange={handlePageChange} />
+        )}
       </section>
 
       <div className="pokemon-app__footer">

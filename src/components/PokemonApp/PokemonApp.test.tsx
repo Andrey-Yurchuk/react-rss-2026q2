@@ -1,26 +1,34 @@
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { POKEMON_SEARCH_STORAGE_KEY } from '../../constants';
 import { seedLocalStorage } from '../../test-utils/mocks';
 import { render, screen, waitFor } from '../../test-utils/render';
 import { PokemonApp } from './PokemonApp';
 
-vi.mock('../../services/pokemonApi', () => ({
-  ApiRequestError: class ApiRequestError extends Error {
-    status: number;
-
-    constructor(message: string, status: number) {
-      super(message);
-      this.name = 'ApiRequestError';
-      this.status = status;
-    }
-  },
-  loadPokemonResults: vi.fn(),
-}));
+vi.mock('../../services/pokemonApi', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../services/pokemonApi')>();
+  return {
+    ...actual,
+    loadPokemonResults: vi.fn(),
+  };
+});
 
 import { ApiRequestError, loadPokemonResults } from '../../services/pokemonApi';
 
 const loadPokemonResultsMock = vi.mocked(loadPokemonResults);
+
+beforeEach(() => {
+  loadPokemonResultsMock.mockReset();
+});
+
+function renderPokemonApp(initialEntry = '/?page=1') {
+  return render(
+    <MemoryRouter initialEntries={[initialEntry]}>
+      <PokemonApp />
+    </MemoryRouter>
+  );
+}
 
 describe('PokemonApp', () => {
   it('loads initial data from hydrated localStorage value', async () => {
@@ -36,7 +44,7 @@ describe('PokemonApp', () => {
       totalCount: 1,
     });
 
-    render(<PokemonApp />);
+    renderPokemonApp();
 
     await waitFor(() => {
       expect(loadPokemonResultsMock).toHaveBeenCalledWith('pikachu', 1);
@@ -57,7 +65,7 @@ describe('PokemonApp', () => {
     });
     loadPokemonResultsMock.mockReturnValueOnce(pendingRequest);
 
-    render(<PokemonApp />);
+    renderPokemonApp();
 
     expect(screen.getByText('Loading…')).toBeInTheDocument();
     resolveRequest({ items: [], totalCount: 0 });
@@ -71,7 +79,7 @@ describe('PokemonApp', () => {
       new ApiRequestError('No Pokemon found for that name.', 404)
     );
 
-    render(<PokemonApp />);
+    renderPokemonApp();
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'No Pokemon found for that name.'
@@ -94,7 +102,7 @@ describe('PokemonApp', () => {
         totalCount: 1,
       });
 
-    render(<PokemonApp />);
+    renderPokemonApp();
     await waitFor(() => expect(loadPokemonResultsMock).toHaveBeenCalledWith('', 1));
 
     await user.clear(screen.getByLabelText(/search pok.mon by exact name/i));
@@ -115,5 +123,49 @@ describe('PokemonApp', () => {
     await user.click(screen.getByRole('button', { name: /search/i }));
 
     expect(loadPokemonResultsMock.mock.calls.length).toBe(callsAfterFirstSearch);
+  });
+
+  it('loads results when page changes in URL', async () => {
+    loadPokemonResultsMock.mockImplementation(async (query, pageNum) => ({
+      items: [
+        {
+          id: pageNum,
+          name: `pokemon-${pageNum}`,
+          description: `Page ${pageNum} item.`,
+        },
+      ],
+      totalCount: 40,
+    }));
+
+    const user = userEvent.setup();
+    renderPokemonApp('/?page=1');
+
+    await waitFor(() => expect(loadPokemonResultsMock).toHaveBeenCalledWith('', 1));
+    expect(await screen.findByRole('heading', { name: 'pokemon-1' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /next/i }));
+
+    await waitFor(() => expect(loadPokemonResultsMock).toHaveBeenCalledWith('', 2));
+    expect(screen.getByRole('heading', { name: 'pokemon-2' })).toBeInTheDocument();
+  });
+
+  it('shows pagination only after items are loaded', async () => {
+    loadPokemonResultsMock.mockResolvedValueOnce({
+      items: [
+        {
+          id: 1,
+          name: 'bulbasaur',
+          description: 'Types: grass, poison. Height: 7, weight: 69.',
+        },
+      ],
+      totalCount: 40,
+    });
+
+    renderPokemonApp();
+
+    expect(screen.queryByRole('navigation', { name: /results pagination/i })).not
+      .toBeInTheDocument();
+
+    expect(await screen.findByText('Page 1 of 2')).toBeInTheDocument();
   });
 });
