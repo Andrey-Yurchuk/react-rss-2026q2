@@ -1,13 +1,18 @@
+import { useCallback } from 'react';
+
 export function useLocalStorage(key: string) {
-  const read = (): string | null => localStorage.getItem(key);
+  const read = useCallback((): string | null => localStorage.getItem(key), [key]);
 
-  const write = (value: string): void => {
-    localStorage.setItem(key, value);
-  };
+  const write = useCallback(
+    (value: string): void => {
+      localStorage.setItem(key, value);
+    },
+    [key]
+  );
 
-  const remove = (): void => {
+  const remove = useCallback((): void => {
     localStorage.removeItem(key);
-  };
+  }, [key]);
 
   return { read, write, remove };
 }
