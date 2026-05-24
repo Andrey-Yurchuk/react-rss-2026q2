@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent,
+} from 'react';
 import { Link, Outlet, useNavigate, useSearchParams } from 'react-router-dom';
 import { POKEMON_SEARCH_STORAGE_KEY } from '../../constants';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
@@ -8,6 +15,7 @@ import {
   totalPagesForCount,
   type PokemonCardModel,
 } from '../../services/pokemonApi';
+import { useSelectedItemsStore } from '../../store/selectedItemsStore';
 import { parsePageParam } from '../../utils/urlParams';
 import { CardList } from '../CardList/index.ts';
 import { CrashOnRender } from '../CrashOnRender/index.ts';
@@ -34,6 +42,15 @@ export function PokemonApp() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [simulateCrash, setSimulateCrash] = useState(false);
+
+  const selectedItems = useSelectedItemsStore((state) => state.selectedItems);
+  const toggleSelectedItem = useSelectedItemsStore(
+    (state) => state.toggleSelectedItem
+  );
+  const selectedIds = useMemo(
+    () => new Set(selectedItems.map((item) => item.id)),
+    [selectedItems]
+  );
 
   useEffect(() => {
     if (searchParams.has('page')) {
@@ -262,7 +279,9 @@ export function PokemonApp() {
               <CardList
                 items={items}
                 selectedId={hasDetails ? selectedId : undefined}
+                selectedIds={selectedIds}
                 onCardSelect={handleCardSelect}
+                onSelectionToggle={toggleSelectedItem}
               />
             )}
 
