@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent,
+} from 'react';
 import { Link, Outlet, useNavigate, useSearchParams } from 'react-router-dom';
 import { POKEMON_SEARCH_STORAGE_KEY } from '../../constants';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
@@ -8,11 +15,18 @@ import {
   totalPagesForCount,
   type PokemonCardModel,
 } from '../../services/pokemonApi';
+import { useSelectedItemsStore } from '../../store/selectedItemsStore';
+import {
+  buildSelectedItemsFilename,
+  serializeSelectedItemsToCsv,
+} from '../../utils/csv';
+import { downloadBlobAsFile } from '../../utils/downloadFile';
 import { parsePageParam } from '../../utils/urlParams';
 import { CardList } from '../CardList/index.ts';
 import { CrashOnRender } from '../CrashOnRender/index.ts';
 import { Pagination } from '../Pagination/index.ts';
 import { Search } from '../Search/index.ts';
+import { SelectedItemsFlyout } from '../SelectedItemsFlyout/index.ts';
 import '../../app/App.css';
 
 export function PokemonApp() {
@@ -34,6 +48,20 @@ export function PokemonApp() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [simulateCrash, setSimulateCrash] = useState(false);
+
+  const selectedItems = useSelectedItemsStore((state) => state.selectedItems);
+  const toggleSelectedItem = useSelectedItemsStore(
+    (state) => state.toggleSelectedItem
+  );
+  const clearSelectedItems = useSelectedItemsStore(
+    (state) => state.clearSelectedItems
+  );
+  const selectedIds = useMemo(
+    () => new Set(selectedItems.map((item) => item.id)),
+    [selectedItems]
+  );
+  const selectedCount = selectedItems.length;
+  const hasSelection = selectedCount > 0;
 
   useEffect(() => {
     if (searchParams.has('page')) {
@@ -199,11 +227,28 @@ export function PokemonApp() {
     setSimulateCrash(true);
   }, []);
 
+  const handleDownloadSelected = useCallback(() => {
+    if (selectedItems.length === 0) {
+      return;
+    }
+    const csv = serializeSelectedItemsToCsv(selectedItems);
+    const filename = buildSelectedItemsFilename(selectedItems.length);
+    downloadBlobAsFile(csv, filename, 'text/csv;charset=utf-8');
+  }, [selectedItems]);
+
   const totalPages = totalPagesForCount(totalCount);
   const showPagination = !loading && !error && items.length > 0;
 
+  const containerClassName = [
+    'pokemon-app',
+    hasDetails ? 'pokemon-app--with-details' : '',
+    hasSelection ? 'pokemon-app--with-flyout' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <div className={hasDetails ? 'pokemon-app pokemon-app--with-details' : 'pokemon-app'}>
+    <div className={containerClassName}>
       <header className="pokemon-app__header">
         <div>
           <h1 className="pokemon-app__title">Pokedex browser</h1>
@@ -262,7 +307,9 @@ export function PokemonApp() {
               <CardList
                 items={items}
                 selectedId={hasDetails ? selectedId : undefined}
+                selectedIds={selectedIds}
                 onCardSelect={handleCardSelect}
+                onSelectionToggle={toggleSelectedItem}
               />
             )}
 
@@ -288,6 +335,12 @@ export function PokemonApp() {
           Trigger error (Error Boundary)
         </button>
       </div>
+
+      <SelectedItemsFlyout
+        selectedCount={selectedCount}
+        onUnselectAll={clearSelectedItems}
+        onDownload={handleDownloadSelected}
+      />
 
       {simulateCrash ? <CrashOnRender /> : null}
     </div>

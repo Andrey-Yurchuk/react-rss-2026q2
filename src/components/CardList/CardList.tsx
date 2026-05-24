@@ -4,10 +4,18 @@ import { Card } from '../Card/index.ts';
 type CardListProps = {
   items: PokemonCardModel[];
   selectedId?: number;
+  selectedIds?: ReadonlySet<number>;
   onCardSelect?: (id: number) => void;
+  onSelectionToggle?: (item: PokemonCardModel) => void;
 };
 
-export function CardList({ items, selectedId, onCardSelect }: CardListProps) {
+export function CardList({
+  items,
+  selectedId,
+  selectedIds,
+  onCardSelect,
+  onSelectionToggle,
+}: CardListProps) {
   if (items.length === 0) {
     return <p className="card-list__empty">No results to show.</p>;
   }
@@ -18,7 +26,9 @@ export function CardList({ items, selectedId, onCardSelect }: CardListProps) {
           key={item.id}
           item={item}
           selected={item.id === selectedId}
+          selectionChecked={selectedIds?.has(item.id) ?? false}
           onSelect={onCardSelect}
+          onSelectionToggle={onSelectionToggle}
         />
       ))}
     </div>

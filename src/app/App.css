@@ -1,3 +1,48 @@
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.app-shell__topbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.75rem 1.25rem 0;
+}
+
+.theme-toggle {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+}
+
+.theme-toggle__button {
+  padding: 0.3rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.theme-toggle__button[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+}
+
+.theme-toggle__button:hover:not([aria-pressed='true']) {
+  color: var(--text-h);
+  border-color: var(--accent-border);
+}
+
 .pokemon-app {
   display: flex;
   flex-direction: column;
@@ -293,6 +338,101 @@
   border-color: var(--accent-border);
   background: var(--accent-bg);
   box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.card--selection-checked {
+  box-shadow: inset 4px 0 0 var(--accent);
+}
+
+.card__selection {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 0.45rem;
+  cursor: pointer;
+}
+
+.card__selection-checkbox {
+  width: 1.05rem;
+  height: 1.05rem;
+  margin: 0;
+  cursor: pointer;
+}
+
+.card__selection-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.pokemon-app--with-flyout {
+  padding-bottom: 6.5rem;
+}
+
+.selected-flyout {
+  position: fixed;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  max-width: calc(100% - 2rem);
+  padding: 0.75rem 1.1rem;
+  border: 1px solid var(--accent-border);
+  border-radius: 12px;
+  background: var(--code-bg);
+  box-shadow: var(--shadow);
+}
+
+.selected-flyout__count {
+  margin: 0;
+  color: var(--text-h);
+  font-weight: 600;
+}
+
+.selected-flyout__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.selected-flyout__button {
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--bg);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.selected-flyout__button:hover {
+  filter: brightness(1.05);
+}
+
+.selected-flyout__button--secondary {
+  background: var(--bg);
+  color: var(--text-h);
+  border-color: var(--accent-border);
+}
+
+@media (max-width: 540px) {
+  .selected-flyout {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .selected-flyout__actions {
+    justify-content: center;
+  }
 }
 
 .card__button {

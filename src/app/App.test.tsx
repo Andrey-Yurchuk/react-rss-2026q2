@@ -1,8 +1,8 @@
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppRoutes } from '../routes/AppRoutes';
 import { createConsoleErrorSpy } from '../test-utils/mocks';
-import { render, renderWithRouter, screen } from '../test-utils/render';
+import { render, renderWithRouter, screen, within } from '../test-utils/render';
 import App from './App';
 
 vi.mock('../services/pokemonApi', async (importOriginal) => {
@@ -14,6 +14,78 @@ vi.mock('../services/pokemonApi', async (importOriginal) => {
 });
 
 describe('App', () => {
+  beforeEach(() => {
+    window.history.replaceState({}, '', '/');
+  });
+
+  afterEach(() => {
+    document.documentElement.removeAttribute('data-theme');
+  });
+
+  it('renders the theme toggle at the top of the app shell', () => {
+    render(<App />);
+
+    const group = screen.getByRole('group', { name: /theme/i });
+    expect(group).toBeInTheDocument();
+    expect(within(group).getByRole('button', { name: /light/i })).toBeInTheDocument();
+    expect(within(group).getByRole('button', { name: /dark/i })).toBeInTheDocument();
+  });
+
+  it('switches the document theme when the user toggles dark mode', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /dark/i }));
+
+    expect(screen.getByRole('button', { name: /dark/i })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
+    expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
+  });
+
+  it('keeps the theme toggle visible after navigating to /about', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('link', { name: /about/i }));
+
+    expect(screen.getByRole('group', { name: /theme/i })).toBeInTheDocument();
+  });
+
+  it('persists the selected theme across SPA navigation to /about', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /dark/i }));
+    expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
+
+    await user.click(screen.getByRole('link', { name: /about/i }));
+
+    expect(
+      screen.getByRole('heading', { name: /pokedex browser/i })
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /dark/i })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
+    expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
+  });
+
+  it('exposes the theme toggle on the 404 page for unknown routes', () => {
+    window.history.replaceState({}, '', '/totally-unknown-route');
+
+    render(<App />);
+
+    expect(
+      screen.getByRole('heading', { name: /page not found/i })
+    ).toBeInTheDocument();
+    const group = screen.getByRole('group', { name: /theme/i });
+    expect(group).toBeInTheDocument();
+    expect(within(group).getByRole('button', { name: /light/i })).toBeInTheDocument();
+    expect(within(group).getByRole('button', { name: /dark/i })).toBeInTheDocument();
+  });
+
   it('shows Error Boundary fallback after trigger button click', async () => {
     const user = userEvent.setup();
     const consoleErrorSpy = createConsoleErrorSpy();

@@ -1,13 +1,24 @@
 import { BrowserRouter } from 'react-router-dom';
 import { AppErrorBoundary } from '../components/AppErrorBoundary/index.ts';
+import { ThemeToggle } from '../components/ThemeToggle/index.ts';
+import { ThemeProvider } from '../context/ThemeContext.tsx';
 import { AppRoutes } from '../routes/AppRoutes';
+
+const ROUTER_BASENAME = import.meta.env.BASE_URL.replace(/\/$/, '') || '/';
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AppErrorBoundary>
-        <AppRoutes />
-      </AppErrorBoundary>
-    </BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter basename={ROUTER_BASENAME}>
+        <div className="app-shell">
+          <div className="app-shell__topbar">
+            <ThemeToggle />
+          </div>
+          <AppErrorBoundary>
+            <AppRoutes />
+          </AppErrorBoundary>
+        </div>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }
