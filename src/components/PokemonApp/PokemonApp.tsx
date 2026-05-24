@@ -16,6 +16,11 @@ import {
   type PokemonCardModel,
 } from '../../services/pokemonApi';
 import { useSelectedItemsStore } from '../../store/selectedItemsStore';
+import {
+  buildSelectedItemsFilename,
+  serializeSelectedItemsToCsv,
+} from '../../utils/csv';
+import { downloadBlobAsFile } from '../../utils/downloadFile';
 import { parsePageParam } from '../../utils/urlParams';
 import { CardList } from '../CardList/index.ts';
 import { CrashOnRender } from '../CrashOnRender/index.ts';
@@ -222,7 +227,14 @@ export function PokemonApp() {
     setSimulateCrash(true);
   }, []);
 
-  const handleDownloadSelected = useCallback(() => {}, []);
+  const handleDownloadSelected = useCallback(() => {
+    if (selectedItems.length === 0) {
+      return;
+    }
+    const csv = serializeSelectedItemsToCsv(selectedItems);
+    const filename = buildSelectedItemsFilename(selectedItems.length);
+    downloadBlobAsFile(csv, filename, 'text/csv;charset=utf-8');
+  }, [selectedItems]);
 
   const totalPages = totalPagesForCount(totalCount);
   const showPagination = !loading && !error && items.length > 0;

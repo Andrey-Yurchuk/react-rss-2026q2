@@ -605,4 +605,81 @@ describe('PokemonApp', () => {
       screen.getByRole('checkbox', { name: /select pikachu/i })
     ).toBeChecked();
   });
+
+  it('downloads selected items as CSV via the Download button using native browser APIs', async () => {
+    const user = userEvent.setup();
+    loadPokemonResultsMock.mockResolvedValue({
+      items: [
+        {
+          id: 25,
+          name: 'pikachu',
+          description: 'Types: electric, fly. Height: 4, weight: 60.',
+        },
+      ],
+      totalCount: 1,
+    });
+
+    if (typeof URL.createObjectURL !== 'function') {
+      URL.createObjectURL = () => '';
+    }
+    if (typeof URL.revokeObjectURL !== 'function') {
+      URL.revokeObjectURL = () => undefined;
+    }
+    const createObjectURLSpy = vi
+      .spyOn(URL, 'createObjectURL')
+      .mockReturnValue('blob:test-csv-url');
+    const revokeObjectURLSpy = vi
+      .spyOn(URL, 'revokeObjectURL')
+      .mockImplementation(() => undefined);
+    const clickSpy = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(() => undefined);
+
+    renderPokemonAppRoutes('/?page=1');
+
+    await screen.findByRole('heading', { name: 'pikachu' });
+    await user.click(screen.getByRole('checkbox', { name: /select pikachu/i }));
+
+    const createdAnchors: HTMLAnchorElement[] = [];
+    const originalCreateElement = document.createElement.bind(document);
+    vi.spyOn(document, 'createElement').mockImplementation(((tag: string) => {
+      const element = originalCreateElement(tag);
+      if (tag.toLowerCase() === 'a') {
+        createdAnchors.push(element as HTMLAnchorElement);
+      }
+      return element;
+    }) as typeof document.createElement);
+
+    await user.click(screen.getByRole('button', { name: /download/i }));
+
+    expect(createObjectURLSpy).toHaveBeenCalledTimes(1);
+    const blob = createObjectURLSpy.mock.calls[0][0] as Blob;
+    expect(blob).toBeInstanceOf(Blob);
+    expect(blob.type).toBe('text/csv;charset=utf-8');
+    await expect(blob.text()).resolves.toBe(
+      [
+        'id,name,description,detailsUrl',
+        '25,pikachu,"Types: electric, fly. Height: 4, weight: 60.",https://pokeapi.co/api/v2/pokemon/25',
+      ].join('\r\n')
+    );
+
+    expect(createdAnchors).toHaveLength(1);
+    const anchor = createdAnchors[0];
+    expect(anchor.download).toBe('1_items.csv');
+    expect(anchor.getAttribute('href')).toBe('blob:test-csv-url');
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+    expect(document.body.contains(anchor)).toBe(false);
+    expect(revokeObjectURLSpy).toHaveBeenCalledWith('blob:test-csv-url');
+
+    expect(
+      screen.getByRole('region', { name: /selected pokemon/i })
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /unselect all/i }));
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('region', { name: /selected pokemon/i })
+      ).not.toBeInTheDocument()
+    );
+    expect(useSelectedItemsStore.getState().selectedItems).toEqual([]);
+  });
 });
