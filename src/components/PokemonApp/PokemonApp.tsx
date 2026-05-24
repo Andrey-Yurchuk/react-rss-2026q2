@@ -21,6 +21,7 @@ import { CardList } from '../CardList/index.ts';
 import { CrashOnRender } from '../CrashOnRender/index.ts';
 import { Pagination } from '../Pagination/index.ts';
 import { Search } from '../Search/index.ts';
+import { SelectedItemsFlyout } from '../SelectedItemsFlyout/index.ts';
 import '../../app/App.css';
 
 export function PokemonApp() {
@@ -47,10 +48,15 @@ export function PokemonApp() {
   const toggleSelectedItem = useSelectedItemsStore(
     (state) => state.toggleSelectedItem
   );
+  const clearSelectedItems = useSelectedItemsStore(
+    (state) => state.clearSelectedItems
+  );
   const selectedIds = useMemo(
     () => new Set(selectedItems.map((item) => item.id)),
     [selectedItems]
   );
+  const selectedCount = selectedItems.length;
+  const hasSelection = selectedCount > 0;
 
   useEffect(() => {
     if (searchParams.has('page')) {
@@ -216,11 +222,21 @@ export function PokemonApp() {
     setSimulateCrash(true);
   }, []);
 
+  const handleDownloadSelected = useCallback(() => {}, []);
+
   const totalPages = totalPagesForCount(totalCount);
   const showPagination = !loading && !error && items.length > 0;
 
+  const containerClassName = [
+    'pokemon-app',
+    hasDetails ? 'pokemon-app--with-details' : '',
+    hasSelection ? 'pokemon-app--with-flyout' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <div className={hasDetails ? 'pokemon-app pokemon-app--with-details' : 'pokemon-app'}>
+    <div className={containerClassName}>
       <header className="pokemon-app__header">
         <div>
           <h1 className="pokemon-app__title">Pokedex browser</h1>
@@ -307,6 +323,12 @@ export function PokemonApp() {
           Trigger error (Error Boundary)
         </button>
       </div>
+
+      <SelectedItemsFlyout
+        selectedCount={selectedCount}
+        onUnselectAll={clearSelectedItems}
+        onDownload={handleDownloadSelected}
+      />
 
       {simulateCrash ? <CrashOnRender /> : null}
     </div>

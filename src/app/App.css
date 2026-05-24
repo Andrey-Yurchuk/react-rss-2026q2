@@ -325,6 +325,71 @@
   border: 0;
 }
 
+.pokemon-app--with-flyout {
+  padding-bottom: 6.5rem;
+}
+
+.selected-flyout {
+  position: fixed;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  max-width: calc(100% - 2rem);
+  padding: 0.75rem 1.1rem;
+  border: 1px solid var(--accent-border);
+  border-radius: 12px;
+  background: var(--code-bg);
+  box-shadow: var(--shadow);
+}
+
+.selected-flyout__count {
+  margin: 0;
+  color: var(--text-h);
+  font-weight: 600;
+}
+
+.selected-flyout__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.selected-flyout__button {
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--bg);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.selected-flyout__button:hover {
+  filter: brightness(1.05);
+}
+
+.selected-flyout__button--secondary {
+  background: var(--bg);
+  color: var(--text-h);
+  border-color: var(--accent-border);
+}
+
+@media (max-width: 540px) {
+  .selected-flyout {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .selected-flyout__actions {
+    justify-content: center;
+  }
+}
+
 .card__button {
   display: inline-block;
   margin-top: 0.75rem;

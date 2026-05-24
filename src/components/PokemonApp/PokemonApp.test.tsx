@@ -518,6 +518,59 @@ describe('PokemonApp', () => {
     ).toBeChecked();
   });
 
+  it('shows flyout with count after selecting items and clears it via Unselect all', async () => {
+    const user = userEvent.setup();
+    loadPokemonResultsMock.mockResolvedValue({
+      items: [
+        {
+          id: 25,
+          name: 'pikachu',
+          description: 'Types: electric. Height: 4, weight: 60.',
+        },
+        {
+          id: 1,
+          name: 'bulbasaur',
+          description: 'Types: grass, poison. Height: 7, weight: 69.',
+        },
+      ],
+      totalCount: 2,
+    });
+
+    renderPokemonAppRoutes('/?page=1');
+
+    await screen.findByRole('heading', { name: 'pikachu' });
+    expect(
+      screen.queryByRole('region', { name: /selected pokemon/i })
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('checkbox', { name: /select pikachu/i }));
+
+    const flyout = await screen.findByRole('region', {
+      name: /selected pokemon/i,
+    });
+    expect(flyout).toHaveTextContent('1 item selected');
+    expect(
+      screen.getByRole('button', { name: /download/i })
+    ).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole('checkbox', { name: /select bulbasaur/i })
+    );
+
+    expect(
+      screen.getByRole('region', { name: /selected pokemon/i })
+    ).toHaveTextContent('2 items selected');
+
+    await user.click(screen.getByRole('button', { name: /unselect all/i }));
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('region', { name: /selected pokemon/i })
+      ).not.toBeInTheDocument()
+    );
+    expect(useSelectedItemsStore.getState().selectedItems).toEqual([]);
+  });
+
   it('keeps Zustand selection when navigating to /about and back', async () => {
     const user = userEvent.setup();
     loadPokemonResultsMock.mockResolvedValue({
