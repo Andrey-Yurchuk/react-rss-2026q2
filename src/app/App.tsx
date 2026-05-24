@@ -4,10 +4,12 @@ import { ThemeToggle } from '../components/ThemeToggle/index.ts';
 import { ThemeProvider } from '../context/ThemeContext.tsx';
 import { AppRoutes } from '../routes/AppRoutes';
 
+const ROUTER_BASENAME = import.meta.env.BASE_URL.replace(/\/$/, '') || '/';
+
 export default function App() {
   return (
     <ThemeProvider>
-      <BrowserRouter>
+      <BrowserRouter basename={ROUTER_BASENAME}>
         <div className="app-shell">
           <div className="app-shell__topbar">
             <ThemeToggle />
