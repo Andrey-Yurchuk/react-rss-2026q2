@@ -53,6 +53,39 @@ describe('App', () => {
     expect(screen.getByRole('group', { name: /theme/i })).toBeInTheDocument();
   });
 
+  it('persists the selected theme across SPA navigation to /about', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /dark/i }));
+    expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
+
+    await user.click(screen.getByRole('link', { name: /about/i }));
+
+    expect(
+      screen.getByRole('heading', { name: /pokedex browser/i })
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /dark/i })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
+    expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
+  });
+
+  it('exposes the theme toggle on the 404 page for unknown routes', () => {
+    window.history.replaceState({}, '', '/totally-unknown-route');
+
+    render(<App />);
+
+    expect(
+      screen.getByRole('heading', { name: /page not found/i })
+    ).toBeInTheDocument();
+    const group = screen.getByRole('group', { name: /theme/i });
+    expect(group).toBeInTheDocument();
+    expect(within(group).getByRole('button', { name: /light/i })).toBeInTheDocument();
+    expect(within(group).getByRole('button', { name: /dark/i })).toBeInTheDocument();
+  });
+
   it('shows Error Boundary fallback after trigger button click', async () => {
     const user = userEvent.setup();
     const consoleErrorSpy = createConsoleErrorSpy();
