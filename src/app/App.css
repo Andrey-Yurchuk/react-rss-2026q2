@@ -1,3 +1,48 @@
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.app-shell__topbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.75rem 1.25rem 0;
+}
+
+.theme-toggle {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+}
+
+.theme-toggle__button {
+  padding: 0.3rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.theme-toggle__button[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+}
+
+.theme-toggle__button:hover:not([aria-pressed='true']) {
+  color: var(--text-h);
+  border-color: var(--accent-border);
+}
+
 .pokemon-app {
   display: flex;
   flex-direction: column;
