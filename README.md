@@ -2,11 +2,11 @@
 
 ## RS School React course project
 
-Vite + React + TypeScript Pokedex browser for the RS School **routing and hooks** task.
+Vite + React + TypeScript Pokedex browser for the RS School **state management and Context API** task.
 
-**PokeAPI** powers paginated search results, a master–detail split view, and lookup by exact English name. State lives in **functional components** with hooks; **`useLocalStorage`** persists the last submitted search. **`AppErrorBoundary`** remains a class component.
+**PokeAPI** powers paginated search and a master–detail split view. **Zustand** stores user-selected Pokemon and survives page changes and SPA navigation. A sticky **flyout** shows the selected count with **Unselect all** and **Download CSV** actions (native `Blob` + `URL.createObjectURL`, filename like `N_items.csv`). **React Context API** controls light/dark theme via a top-level toggle, with the choice persisted to `localStorage`.
 
-### Routing
+### Routes
 
 - `/` — search and results (`?page=1`, `?page=2&details=25`)
 - `/about` — author and course links
@@ -25,4 +25,4 @@ Vite + React + TypeScript Pokedex browser for the RS School **routing and hooks*
 
 Tooling: **ESLint**, **Prettier**, **Husky** (pre-commit: `lint`, pre-push: `test`).
 
-Active branch for this task: **`hooks-and-routing`**.
+Active branch for this task: **`app-state-management`**.
