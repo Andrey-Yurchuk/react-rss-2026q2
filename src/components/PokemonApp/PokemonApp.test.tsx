@@ -32,10 +32,17 @@ import {
 const loadPokemonResultsMock = vi.mocked(loadPokemonResults);
 const loadPokemonByIdMock = vi.mocked(loadPokemonById);
 
+function countResultsCalls(query: string, page: number) {
+  return loadPokemonResultsMock.mock.calls.filter(
+    ([actualQuery, actualPage]) => actualQuery === query && actualPage === page
+  ).length;
+}
+
 beforeEach(() => {
   loadPokemonResultsMock.mockReset();
   loadPokemonByIdMock.mockReset();
   useSelectedItemsStore.setState({ selectedItems: [] });
+  localStorage.removeItem(POKEMON_SEARCH_STORAGE_KEY);
 });
 
 function renderPokemonApp(route = '/?page=1') {
@@ -77,6 +84,7 @@ function renderPokemonAppWithAboutRoute(route = '/?page=1') {
 }
 
 describe('PokemonApp', () => {
+  describe('results query behavior', () => {
   it('loads initial data from hydrated localStorage value', async () => {
     seedLocalStorage(POKEMON_SEARCH_STORAGE_KEY, '  PIKACHU ');
     loadPokemonResultsMock.mockResolvedValueOnce({
@@ -134,22 +142,22 @@ describe('PokemonApp', () => {
 
   it('normalizes search query, saves it to localStorage and avoids duplicate request', async () => {
     const user = userEvent.setup();
-    loadPokemonResultsMock
-      .mockResolvedValueOnce({ items: [], totalCount: 0 })
-      .mockResolvedValueOnce({ items: [], totalCount: 0 })
-      .mockResolvedValueOnce({
-        items: [
-          {
-            id: 25,
-            name: 'pikachu',
-            description: 'Types: electric. Height: 4, weight: 60.',
-          },
-        ],
-        totalCount: 1,
-      });
+    loadPokemonResultsMock.mockImplementation(async (query) => ({
+      items:
+        query === 'pikachu'
+          ? [
+              {
+                id: 25,
+                name: 'pikachu',
+                description: 'Types: electric. Height: 4, weight: 60.',
+              },
+            ]
+          : [],
+      totalCount: query === 'pikachu' ? 1 : 0,
+    }));
 
     renderPokemonApp();
-    await waitFor(() => expect(loadPokemonResultsMock).toHaveBeenCalledWith('', 1));
+    await waitFor(() => expect(countResultsCalls('', 1)).toBe(1));
 
     await user.clear(screen.getByLabelText(/search pok.mon by exact name/i));
     await user.type(
@@ -158,17 +166,37 @@ describe('PokemonApp', () => {
     );
     await user.click(screen.getByRole('button', { name: /search/i }));
 
-    await waitFor(() =>
-      expect(loadPokemonResultsMock).toHaveBeenCalledWith('pikachu', 1)
-    );
-    await waitFor(() =>
-      expect(localStorage.getItem(POKEMON_SEARCH_STORAGE_KEY)).toBe('pikachu')
-    );
-    const callsAfterFirstSearch = loadPokemonResultsMock.mock.calls.length;
+    await waitFor(() => expect(countResultsCalls('pikachu', 1)).toBe(1));
+    expect(localStorage.getItem(POKEMON_SEARCH_STORAGE_KEY)).toBe('pikachu');
 
     await user.click(screen.getByRole('button', { name: /search/i }));
 
-    expect(loadPokemonResultsMock.mock.calls.length).toBe(callsAfterFirstSearch);
+    expect(countResultsCalls('pikachu', 1)).toBe(1);
+  });
+
+  it('does not persist search query to localStorage when only paginating', async () => {
+    const user = userEvent.setup();
+    loadPokemonResultsMock.mockImplementation(async (_query, pageNum) => ({
+      items: [
+        {
+          id: pageNum,
+          name: `pokemon-${pageNum}`,
+          description: `Page ${pageNum} item.`,
+        },
+      ],
+      totalCount: 40,
+    }));
+
+    renderPokemonApp('/?page=1');
+
+    expect(await screen.findByRole('heading', { name: 'pokemon-1' })).toBeInTheDocument();
+    expect(countResultsCalls('', 1)).toBe(1);
+    expect(localStorage.getItem(POKEMON_SEARCH_STORAGE_KEY)).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: /next/i }));
+
+    await waitFor(() => expect(countResultsCalls('', 2)).toBe(1));
+    expect(localStorage.getItem(POKEMON_SEARCH_STORAGE_KEY)).toBeNull();
   });
 
   it('manually refreshes the current results query', async () => {
@@ -189,16 +217,11 @@ describe('PokemonApp', () => {
     await waitFor(() => expect(loadPokemonResultsMock).toHaveBeenCalledWith('', 1));
     expect(await screen.findByRole('heading', { name: 'bulbasaur' })).toBeInTheDocument();
 
-    const countPage1Calls = () =>
-      loadPokemonResultsMock.mock.calls.filter(
-        ([query, pageNum]) => query === '' && pageNum === 1
-      ).length;
-
-    expect(countPage1Calls()).toBe(1);
+    expect(countResultsCalls('', 1)).toBe(1);
 
     await user.click(screen.getByRole('button', { name: /refresh results/i }));
 
-    await waitFor(() => expect(countPage1Calls()).toBe(2));
+    await waitFor(() => expect(countResultsCalls('', 1)).toBe(2));
     expect(await screen.findByRole('heading', { name: 'bulbasaur' })).toBeInTheDocument();
   });
 
@@ -229,10 +252,8 @@ describe('PokemonApp', () => {
 
     expect(await screen.findByRole('heading', { name: 'pokemon-1' })).toBeInTheDocument();
 
-    const page1Calls = loadPokemonResultsMock.mock.calls.filter(
-      ([query, pageNum]) => query === '' && pageNum === 1
-    );
-    expect(page1Calls).toHaveLength(1);
+    expect(countResultsCalls('', 1)).toBe(1);
+    expect(countResultsCalls('', 2)).toBe(1);
   });
 
   it('loads results when page changes in URL', async () => {
@@ -257,6 +278,73 @@ describe('PokemonApp', () => {
 
     await waitFor(() => expect(loadPokemonResultsMock).toHaveBeenCalledWith('', 2));
     expect(screen.getByRole('heading', { name: 'pokemon-2' })).toBeInTheDocument();
+    expect(countResultsCalls('', 1)).toBe(1);
+    expect(countResultsCalls('', 2)).toBe(1);
+  });
+
+  it('shows Refreshing… while manually refreshing cached results', async () => {
+    let resolveRefresh: (value: {
+      items: Array<{ id: number; name: string; description: string }>;
+      totalCount: number;
+    }) => void = () => undefined;
+    loadPokemonResultsMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveRefresh = resolve;
+        })
+    );
+
+    const user = userEvent.setup();
+    renderPokemonApp();
+
+    await waitFor(() => expect(countResultsCalls('', 1)).toBe(1));
+    resolveRefresh({
+      items: [
+        {
+          id: 1,
+          name: 'bulbasaur',
+          description: 'Types: grass, poison. Height: 7, weight: 69.',
+        },
+      ],
+      totalCount: 40,
+    });
+    expect(await screen.findByRole('heading', { name: 'bulbasaur' })).toBeInTheDocument();
+
+    loadPokemonResultsMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveRefresh = resolve;
+        })
+    );
+
+    await user.click(screen.getByRole('button', { name: /refresh results/i }));
+
+    expect(screen.getByText('Refreshing…')).toBeInTheDocument();
+    resolveRefresh({
+      items: [
+        {
+          id: 1,
+          name: 'bulbasaur',
+          description: 'Types: grass, poison. Height: 7, weight: 69.',
+        },
+      ],
+      totalCount: 40,
+    });
+    await waitFor(() =>
+      expect(screen.queryByText('Refreshing…')).not.toBeInTheDocument()
+    );
+    expect(countResultsCalls('', 1)).toBe(2);
+  });
+
+  it('shows generic error when list request fails unexpectedly', async () => {
+    loadPokemonResultsMock.mockRejectedValueOnce(new Error('network down'));
+
+    renderPokemonApp();
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Unable to reach the Pokemon API. Check your connection.'
+    );
+  });
   });
 
   it('opens details in the Outlet and closes them while preserving the page', async () => {
@@ -422,16 +510,6 @@ describe('PokemonApp', () => {
 
     await waitFor(() =>
       expect(screen.getByTestId('current-location')).toHaveTextContent('/?page=1')
-    );
-  });
-
-  it('shows generic error when list request fails unexpectedly', async () => {
-    loadPokemonResultsMock.mockRejectedValueOnce(new Error('network down'));
-
-    renderPokemonApp();
-
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Unable to reach the Pokemon API. Check your connection.'
     );
   });
 
@@ -668,6 +746,7 @@ describe('PokemonApp', () => {
     expect(
       screen.getByRole('checkbox', { name: /select pikachu/i })
     ).toBeChecked();
+    expect(countResultsCalls('', 1)).toBe(1);
   });
 
   it('downloads selected items as CSV via the Download button using native browser APIs', async () => {
