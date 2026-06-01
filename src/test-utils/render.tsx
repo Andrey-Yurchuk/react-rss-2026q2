@@ -6,21 +6,42 @@ import {
   waitForElementToBeRemoved,
   fireEvent,
 } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactElement } from 'react';
 import { MemoryRouter } from 'react-router-dom';
+import { createTestQueryClient } from './queryClient.ts';
 
-export function renderUi(ui: ReactElement) {
-  return render(ui);
+export type RenderWithRouterOptions = {
+  route?: string;
+  queryClient?: QueryClient;
+};
+
+export type RenderUiOptions = {
+  queryClient?: QueryClient;
+};
+
+export { createTestQueryClient };
+
+export function renderUi(
+  ui: ReactElement,
+  { queryClient = createTestQueryClient() }: RenderUiOptions = {}
+) {
+  return render(
+    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+  );
 }
 
 export function renderWithRouter(
   ui: ReactElement,
-  { route = '/?page=1' }: { route?: string } = {}
+  {
+    route = '/?page=1',
+    queryClient = createTestQueryClient(),
+  }: RenderWithRouterOptions = {}
 ) {
   return render(
-    <MemoryRouter initialEntries={[route]}>
-      {ui}
-    </MemoryRouter>
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={[route]}>{ui}</MemoryRouter>
+    </QueryClientProvider>
   );
 }
 

@@ -1,10 +1,7 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
-import type { ReactElement } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { POKEAPI_POKEMON_URL, POKEMON_SEARCH_STORAGE_KEY } from '../../constants';
-import { QUERY_CACHE_TTL_MS } from '../../config/query.ts';
 import { useSelectedItemsStore } from '../../store/selectedItemsStore';
 import { seedLocalStorage } from '../../test-utils/mocks';
 import {
@@ -41,29 +38,8 @@ beforeEach(() => {
   useSelectedItemsStore.setState({ selectedItems: [] });
 });
 
-function createTestQueryClient() {
-  return new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: QUERY_CACHE_TTL_MS,
-        gcTime: QUERY_CACHE_TTL_MS,
-        retry: false,
-      },
-    },
-  });
-}
-
-function renderWithQueryClient(ui: ReactElement, route = '/?page=1') {
-  const queryClient = createTestQueryClient();
-
-  return renderWithRouter(
-    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
-    { route }
-  );
-}
-
 function renderPokemonApp(route = '/?page=1') {
-  return renderWithQueryClient(<PokemonApp />, route);
+  return renderWithRouter(<PokemonApp />, { route });
 }
 
 function LocationProbe() {
@@ -72,7 +48,7 @@ function LocationProbe() {
 }
 
 function renderPokemonAppRoutes(route = '/?page=1') {
-  return renderWithQueryClient(
+  return renderWithRouter(
     <>
       <Routes>
         <Route path="/" element={<PokemonApp />}>
@@ -81,12 +57,12 @@ function renderPokemonAppRoutes(route = '/?page=1') {
       </Routes>
       <LocationProbe />
     </>,
-    route
+    { route }
   );
 }
 
 function renderPokemonAppWithAboutRoute(route = '/?page=1') {
-  return renderWithQueryClient(
+  return renderWithRouter(
     <>
       <Routes>
         <Route path="/" element={<PokemonApp />}>
@@ -96,7 +72,7 @@ function renderPokemonAppWithAboutRoute(route = '/?page=1') {
       </Routes>
       <LocationProbe />
     </>,
-    route
+    { route }
   );
 }
 

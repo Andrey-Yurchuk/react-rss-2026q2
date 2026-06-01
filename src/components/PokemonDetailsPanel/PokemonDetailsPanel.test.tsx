@@ -1,13 +1,16 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { QUERY_CACHE_TTL_MS } from '../../config/query.ts';
 import {
   ApiRequestError,
   loadPokemonById,
 } from '../../services/pokemonApi';
-import { renderWithRouter, screen, waitFor } from '../../test-utils/render';
+import {
+  createTestQueryClient,
+  renderWithRouter,
+  screen,
+  waitFor,
+} from '../../test-utils/render';
 import { PokemonDetailsPanel } from './PokemonDetailsPanel';
 
 vi.mock('../../services/pokemonApi', async (importOriginal) => {
@@ -20,18 +23,6 @@ vi.mock('../../services/pokemonApi', async (importOriginal) => {
 
 const loadPokemonByIdMock = vi.mocked(loadPokemonById);
 
-function createTestQueryClient() {
-  return new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: QUERY_CACHE_TTL_MS,
-        gcTime: QUERY_CACHE_TTL_MS,
-        retry: false,
-      },
-    },
-  });
-}
-
 function LocationProbe() {
   const location = useLocation();
   return <p data-testid="current-location">{location.pathname}{location.search}</p>;
@@ -39,13 +30,13 @@ function LocationProbe() {
 
 function renderDetailsPanel(route = '/?page=2&details=25', queryClient = createTestQueryClient()) {
   return renderWithRouter(
-    <QueryClientProvider client={queryClient}>
+    <>
       <Routes>
         <Route path="/" element={<PokemonDetailsPanel />} />
       </Routes>
       <LocationProbe />
-    </QueryClientProvider>,
-    { route }
+    </>,
+    { route, queryClient }
   );
 }
 
@@ -167,21 +158,22 @@ describe('PokemonDetailsPanel', () => {
 
     const queryClient = createTestQueryClient();
     const panel = (
-      <QueryClientProvider client={queryClient}>
-        <Routes>
-          <Route path="/" element={<PokemonDetailsPanel />} />
-        </Routes>
-      </QueryClientProvider>
+      <Routes>
+        <Route path="/" element={<PokemonDetailsPanel />} />
+      </Routes>
     );
 
-    const { unmount } = renderWithRouter(panel, { route: '/?page=2&details=25' });
+    const { unmount } = renderWithRouter(panel, {
+      route: '/?page=2&details=25',
+      queryClient,
+    });
 
     await screen.findByText('Pokedex #25');
     expect(loadPokemonByIdMock).toHaveBeenCalledTimes(1);
 
     unmount();
 
-    renderWithRouter(panel, { route: '/?page=2&details=25' });
+    renderWithRouter(panel, { route: '/?page=2&details=25', queryClient });
 
     expect(await screen.findByText('Pokedex #25')).toBeInTheDocument();
     expect(loadPokemonByIdMock).toHaveBeenCalledTimes(1);
