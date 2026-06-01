@@ -195,6 +195,37 @@ describe('PokemonApp', () => {
     expect(loadPokemonResultsMock.mock.calls.length).toBe(callsAfterFirstSearch);
   });
 
+  it('manually refreshes the current results query', async () => {
+    loadPokemonResultsMock.mockResolvedValue({
+      items: [
+        {
+          id: 1,
+          name: 'bulbasaur',
+          description: 'Types: grass, poison. Height: 7, weight: 69.',
+        },
+      ],
+      totalCount: 40,
+    });
+
+    const user = userEvent.setup();
+    renderPokemonApp();
+
+    await waitFor(() => expect(loadPokemonResultsMock).toHaveBeenCalledWith('', 1));
+    expect(await screen.findByRole('heading', { name: 'bulbasaur' })).toBeInTheDocument();
+
+    const countPage1Calls = () =>
+      loadPokemonResultsMock.mock.calls.filter(
+        ([query, pageNum]) => query === '' && pageNum === 1
+      ).length;
+
+    expect(countPage1Calls()).toBe(1);
+
+    await user.click(screen.getByRole('button', { name: /refresh results/i }));
+
+    await waitFor(() => expect(countPage1Calls()).toBe(2));
+    expect(await screen.findByRole('heading', { name: 'bulbasaur' })).toBeInTheDocument();
+  });
+
   it('reuses cached results when returning to a previously visited page', async () => {
     loadPokemonResultsMock.mockImplementation(async (_query, pageNum) => ({
       items: [

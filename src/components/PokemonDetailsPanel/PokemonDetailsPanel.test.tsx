@@ -129,6 +129,35 @@ describe('PokemonDetailsPanel', () => {
     );
   });
 
+  it('manually refreshes the current details query', async () => {
+    loadPokemonByIdMock.mockResolvedValue({
+      id: 25,
+      name: 'pikachu',
+      description: 'Types: electric. Height: 4, weight: 60.',
+    });
+
+    const user = userEvent.setup();
+    renderDetailsPanel();
+
+    await screen.findByText('Pokedex #25');
+    expect(loadPokemonByIdMock).toHaveBeenCalledTimes(1);
+
+    await user.click(screen.getByRole('button', { name: /refresh details/i }));
+
+    await waitFor(() => expect(loadPokemonByIdMock).toHaveBeenCalledTimes(2));
+    expect(screen.getByText('Pokedex #25')).toBeInTheDocument();
+  });
+
+  it('does not show Refresh details for an invalid id', async () => {
+    renderDetailsPanel('/?page=1&details=abc');
+
+    await screen.findByRole('alert');
+    expect(
+      screen.queryByRole('button', { name: /refresh details/i })
+    ).not.toBeInTheDocument();
+    expect(loadPokemonByIdMock).not.toHaveBeenCalled();
+  });
+
   it('reuses cached details when reopening the same pokemon id', async () => {
     loadPokemonByIdMock.mockResolvedValue({
       id: 25,

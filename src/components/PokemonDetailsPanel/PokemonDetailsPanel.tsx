@@ -1,11 +1,15 @@
+import { useQueryClient } from '@tanstack/react-query';
+import { useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   getPokemonDetailsErrorMessage,
+  pokemonQueryKeys,
   usePokemonDetailsQuery,
 } from '../../queries/pokemonQueries.ts';
 import { parsePageParam } from '../../utils/urlParams';
 
 export function PokemonDetailsPanel() {
+  const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const page = parsePageParam(searchParams.get('page'));
@@ -17,6 +21,8 @@ export function PokemonDetailsPanel() {
 
   const invalidId = detailsId === null;
   const loading = !invalidId && detailsQuery.isLoading;
+  const refreshing =
+    !invalidId && detailsQuery.isFetching && !loading;
   const error = invalidId
     ? 'Pokemon details were not found.'
     : detailsQuery.isError
@@ -28,17 +34,44 @@ export function PokemonDetailsPanel() {
     navigate({ pathname: '/', search: `?page=${page}` });
   };
 
+  const handleRefreshDetails = useCallback(async () => {
+    if (detailsId === null) {
+      return;
+    }
+
+    await queryClient.invalidateQueries({
+      queryKey: pokemonQueryKeys.details(detailsId),
+      refetchType: 'none',
+    });
+    await detailsQuery.refetch();
+  }, [queryClient, detailsId, detailsQuery]);
+
   return (
     <aside className="details-panel" aria-label="Pokemon details">
       <div className="details-panel__header">
         <h2 className="details-panel__title">Pokemon details</h2>
-        <button
-          type="button"
-          className="details-panel__close"
-          onClick={handleClose}
-        >
-          Close
-        </button>
+        <div className="details-panel__actions">
+          {detailsId !== null ? (
+            <button
+              type="button"
+              className="details-panel__refresh"
+              aria-label="Refresh details"
+              onClick={() => {
+                handleRefreshDetails().catch(() => undefined);
+              }}
+              disabled={detailsQuery.isFetching}
+            >
+              Refresh details
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="details-panel__close"
+            onClick={handleClose}
+          >
+            Close
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -46,6 +79,12 @@ export function PokemonDetailsPanel() {
           <div className="loading__spinner" />
           <span className="loading__label">Loading details…</span>
         </div>
+      ) : null}
+
+      {refreshing ? (
+        <p className="details-panel__refreshing" aria-live="polite">
+          Refreshing details…
+        </p>
       ) : null}
 
       {!loading && error ? (
