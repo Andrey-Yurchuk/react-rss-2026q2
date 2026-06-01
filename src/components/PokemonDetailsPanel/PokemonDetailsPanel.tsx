@@ -51,6 +51,13 @@ export function PokemonDetailsPanel() {
       <div className="details-panel__header">
         <h2 className="details-panel__title">Pokemon details</h2>
         <div className="details-panel__actions">
+          <button
+            type="button"
+            className="details-panel__close"
+            onClick={handleClose}
+          >
+            Close
+          </button>
           {detailsId !== null ? (
             <button
               type="button"
@@ -64,13 +71,6 @@ export function PokemonDetailsPanel() {
               Refresh details
             </button>
           ) : null}
-          <button
-            type="button"
-            className="details-panel__close"
-            onClick={handleClose}
-          >
-            Close
-          </button>
         </div>
       </div>
 
