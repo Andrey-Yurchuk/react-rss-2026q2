@@ -27,7 +27,7 @@ type UsePokemonResultsQueryOptions = Omit<
 
 type UsePokemonDetailsQueryOptions = Omit<
   UseQueryOptions<PokemonCardModel, Error>,
-  'queryKey' | 'queryFn' | 'enabled'
+  'queryKey' | 'queryFn'
 >;
 
 export function getPokemonListErrorMessage(error: unknown): string {
