@@ -1,10 +1,8 @@
-import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  ApiRequestError,
-  loadPokemonById,
-  type PokemonCardModel,
-} from '../../services/pokemonApi';
+  getPokemonDetailsErrorMessage,
+  usePokemonDetailsQuery,
+} from '../../queries/pokemonQueries.ts';
 import { parsePageParam } from '../../utils/urlParams';
 
 export function PokemonDetailsPanel() {
@@ -12,54 +10,19 @@ export function PokemonDetailsPanel() {
   const navigate = useNavigate();
   const page = parsePageParam(searchParams.get('page'));
   const parsedId = Number(searchParams.get('details'));
+  const detailsId =
+    Number.isInteger(parsedId) && parsedId > 0 ? parsedId : null;
 
-  const [details, setDetails] = useState<PokemonCardModel | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const detailsQuery = usePokemonDetailsQuery(detailsId);
 
-  useEffect(() => {
-    let ignore = false;
-
-    async function loadDetails() {
-      if (!Number.isInteger(parsedId) || parsedId < 1) {
-        setLoading(false);
-        setError('Pokemon details were not found.');
-        setDetails(null);
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-      try {
-        const loadedDetails = await loadPokemonById(parsedId);
-        if (ignore) {
-          return;
-        }
-        setDetails(loadedDetails);
-        setError(null);
-      } catch (err) {
-        if (ignore) {
-          return;
-        }
-        const message =
-          err instanceof ApiRequestError
-            ? err.message
-            : 'Unable to load Pokemon details. Check your connection';
-        setDetails(null);
-        setError(message);
-      } finally {
-        if (!ignore) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void loadDetails();
-
-    return () => {
-      ignore = true;
-    };
-  }, [parsedId]);
+  const invalidId = detailsId === null;
+  const loading = !invalidId && detailsQuery.isLoading;
+  const error = invalidId
+    ? 'Pokemon details were not found.'
+    : detailsQuery.isError
+      ? getPokemonDetailsErrorMessage(detailsQuery.error)
+      : null;
+  const details = detailsQuery.data;
 
   const handleClose = () => {
     navigate({ pathname: '/', search: `?page=${page}` });
