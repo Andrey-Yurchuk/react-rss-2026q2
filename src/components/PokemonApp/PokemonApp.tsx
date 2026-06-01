@@ -10,11 +10,10 @@ import { Link, Outlet, useNavigate, useSearchParams } from 'react-router-dom';
 import { POKEMON_SEARCH_STORAGE_KEY } from '../../constants';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 import {
-  ApiRequestError,
-  loadPokemonResults,
-  totalPagesForCount,
-  type PokemonCardModel,
-} from '../../services/pokemonApi';
+  getPokemonListErrorMessage,
+  usePokemonResultsQuery,
+} from '../../queries/pokemonQueries.ts';
+import { totalPagesForCount } from '../../services/pokemonApi';
 import { useSelectedItemsStore } from '../../store/selectedItemsStore';
 import {
   buildSelectedItemsFilename,
@@ -33,8 +32,8 @@ export function PokemonApp() {
   const { write: writeSearchToStorage } = useLocalStorage(POKEMON_SEARCH_STORAGE_KEY);
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const requestSerialRef = useRef(0);
   const shouldPersistRef = useRef(false);
+  const lastSubmittedQueryRef = useRef<string | null>(null);
 
   const page = parsePageParam(searchParams.get('page'));
   const selectedId = Number(searchParams.get('details'));
@@ -42,12 +41,11 @@ export function PokemonApp() {
 
   const [searchInput, setSearchInput] = useState('');
   const [submittedQuery, setSubmittedQuery] = useState<string | null>(null);
-  const [lastSubmittedQuery, setLastSubmittedQuery] = useState<string | null>(null);
-  const [items, setItems] = useState<PokemonCardModel[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [simulateCrash, setSimulateCrash] = useState(false);
+
+  const resultsQuery = usePokemonResultsQuery(submittedQuery ?? '', page, {
+    enabled: submittedQuery !== null,
+  });
 
   const selectedItems = useSelectedItemsStore((state) => state.selectedItems);
   const toggleSelectedItem = useSelectedItemsStore(
@@ -63,6 +61,13 @@ export function PokemonApp() {
   const selectedCount = selectedItems.length;
   const hasSelection = selectedCount > 0;
 
+  const items = resultsQuery.data?.items ?? [];
+  const totalCount = resultsQuery.data?.totalCount ?? 0;
+  const loading = resultsQuery.isLoading;
+  const error = resultsQuery.isError
+    ? getPokemonListErrorMessage(resultsQuery.error)
+    : null;
+
   useEffect(() => {
     if (searchParams.has('page')) {
       return;
@@ -77,64 +82,31 @@ export function PokemonApp() {
     );
   }, [searchParams, setSearchParams]);
 
-  const loadResults = useCallback(
-    async (
-      normalizedQuery: string,
-      pageNum: number,
-      options: { persistToStorage?: boolean } = {}
-    ) => {
-      const requestId = ++requestSerialRef.current;
-      setLoading(true);
-      setError(null);
-
-      try {
-        const { items: loadedItems, totalCount: count } = await loadPokemonResults(
-          normalizedQuery,
-          pageNum
-        );
-        if (requestId !== requestSerialRef.current) {
-          return;
-        }
-        setItems(loadedItems);
-        setTotalCount(count);
-        setLoading(false);
-        setError(null);
-        setLastSubmittedQuery(normalizedQuery);
-        if (options.persistToStorage) {
-          writeSearchToStorage(normalizedQuery);
-        }
-      } catch (err) {
-        if (requestId !== requestSerialRef.current) {
-          return;
-        }
-        const message =
-          err instanceof ApiRequestError
-            ? err.message
-            : 'Unable to reach the Pokemon API. Check your connection.';
-        setLoading(false);
-        setError(message);
-        setItems([]);
-        setTotalCount(0);
-        setLastSubmittedQuery((prev) =>
-          options.persistToStorage ? normalizedQuery : prev
-        );
-        if (options.persistToStorage) {
-          writeSearchToStorage(normalizedQuery);
-        }
-      }
-    },
-    [writeSearchToStorage]
-  );
-
   useEffect(() => {
     if (submittedQuery === null) {
       return;
     }
-    void loadResults(submittedQuery, page, {
-      persistToStorage: shouldPersistRef.current,
-    });
-    shouldPersistRef.current = false;
-  }, [submittedQuery, page, loadResults]);
+
+    if (resultsQuery.isSuccess) {
+      lastSubmittedQueryRef.current = submittedQuery;
+      if (shouldPersistRef.current) {
+        writeSearchToStorage(submittedQuery);
+        shouldPersistRef.current = false;
+      }
+      return;
+    }
+
+    if (resultsQuery.isError && shouldPersistRef.current) {
+      lastSubmittedQueryRef.current = submittedQuery;
+      writeSearchToStorage(submittedQuery);
+      shouldPersistRef.current = false;
+    }
+  }, [
+    resultsQuery.isSuccess,
+    resultsQuery.isError,
+    submittedQuery,
+    writeSearchToStorage,
+  ]);
 
   const handleStorageHydrated = useCallback((normalizedFromStorage: string) => {
     setSearchInput(normalizedFromStorage);
@@ -161,7 +133,10 @@ export function PokemonApp() {
 
   const handleSearchClick = useCallback(() => {
     const normalized = searchInput.trim().toLowerCase();
-    if (lastSubmittedQuery !== null && normalized === lastSubmittedQuery) {
+    if (
+      lastSubmittedQueryRef.current !== null &&
+      normalized === lastSubmittedQueryRef.current
+    ) {
       return;
     }
     shouldPersistRef.current = true;
@@ -176,7 +151,7 @@ export function PokemonApp() {
       );
     }
     setSubmittedQuery(normalized);
-  }, [searchInput, lastSubmittedQuery, searchParams, setSearchParams]);
+  }, [searchInput, searchParams, setSearchParams]);
 
   const handlePageChange = useCallback(
     (newPage: number) => {

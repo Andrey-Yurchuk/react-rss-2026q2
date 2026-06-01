@@ -1,7 +1,10 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
+import type { ReactElement } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { POKEAPI_POKEMON_URL, POKEMON_SEARCH_STORAGE_KEY } from '../../constants';
+import { QUERY_CACHE_TTL_MS } from '../../config/query.ts';
 import { useSelectedItemsStore } from '../../store/selectedItemsStore';
 import { seedLocalStorage } from '../../test-utils/mocks';
 import {
@@ -38,8 +41,29 @@ beforeEach(() => {
   useSelectedItemsStore.setState({ selectedItems: [] });
 });
 
+function createTestQueryClient() {
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: QUERY_CACHE_TTL_MS,
+        gcTime: QUERY_CACHE_TTL_MS,
+        retry: false,
+      },
+    },
+  });
+}
+
+function renderWithQueryClient(ui: ReactElement, route = '/?page=1') {
+  const queryClient = createTestQueryClient();
+
+  return renderWithRouter(
+    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
+    { route }
+  );
+}
+
 function renderPokemonApp(route = '/?page=1') {
-  return renderWithRouter(<PokemonApp />, { route });
+  return renderWithQueryClient(<PokemonApp />, route);
 }
 
 function LocationProbe() {
@@ -48,7 +72,7 @@ function LocationProbe() {
 }
 
 function renderPokemonAppRoutes(route = '/?page=1') {
-  return renderWithRouter(
+  return renderWithQueryClient(
     <>
       <Routes>
         <Route path="/" element={<PokemonApp />}>
@@ -57,12 +81,12 @@ function renderPokemonAppRoutes(route = '/?page=1') {
       </Routes>
       <LocationProbe />
     </>,
-    { route }
+    route
   );
 }
 
 function renderPokemonAppWithAboutRoute(route = '/?page=1') {
-  return renderWithRouter(
+  return renderWithQueryClient(
     <>
       <Routes>
         <Route path="/" element={<PokemonApp />}>
@@ -72,7 +96,7 @@ function renderPokemonAppWithAboutRoute(route = '/?page=1') {
       </Routes>
       <LocationProbe />
     </>,
-    { route }
+    route
   );
 }
 
@@ -95,7 +119,7 @@ describe('PokemonApp', () => {
     await waitFor(() => {
       expect(loadPokemonResultsMock).toHaveBeenCalledWith('pikachu', 1);
     });
-    expect(screen.getByRole('heading', { name: 'pikachu' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'pikachu' })).toBeInTheDocument();
   });
 
   it('shows loading state while request is pending', async () => {
@@ -169,6 +193,39 @@ describe('PokemonApp', () => {
     await user.click(screen.getByRole('button', { name: /search/i }));
 
     expect(loadPokemonResultsMock.mock.calls.length).toBe(callsAfterFirstSearch);
+  });
+
+  it('reuses cached results when returning to a previously visited page', async () => {
+    loadPokemonResultsMock.mockImplementation(async (_query, pageNum) => ({
+      items: [
+        {
+          id: pageNum,
+          name: `pokemon-${pageNum}`,
+          description: `Page ${pageNum} item.`,
+        },
+      ],
+      totalCount: 40,
+    }));
+
+    const user = userEvent.setup();
+    renderPokemonApp('/?page=1');
+
+    await waitFor(() => expect(loadPokemonResultsMock).toHaveBeenCalledWith('', 1));
+    expect(await screen.findByRole('heading', { name: 'pokemon-1' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /next/i }));
+
+    await waitFor(() => expect(loadPokemonResultsMock).toHaveBeenCalledWith('', 2));
+    expect(await screen.findByRole('heading', { name: 'pokemon-2' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /previous/i }));
+
+    expect(await screen.findByRole('heading', { name: 'pokemon-1' })).toBeInTheDocument();
+
+    const page1Calls = loadPokemonResultsMock.mock.calls.filter(
+      ([query, pageNum]) => query === '' && pageNum === 1
+    );
+    expect(page1Calls).toHaveLength(1);
   });
 
   it('loads results when page changes in URL', async () => {
