@@ -2,9 +2,22 @@
 
 ## RS School React course project
 
-Vite + React + TypeScript Pokedex browser for the RS School **API querying in React** task.
+Vite + React + TypeScript Pokedex browser extended with profile forms for the RS School **React Forms** task.
 
-**PokeAPI** powers paginated search and a master–detail split view. **TanStack Query** handles API fetching, caching, and cache TTL for server state. **Zustand** stores user-selected Pokemon and survives page changes and SPA navigation. A sticky **flyout** shows the selected count with **Unselect all** and **Download CSV** actions (native `Blob` + `URL.createObjectURL`, filename like `N_items.csv`). **React Context API** controls light/dark theme via a top-level toggle, with the choice persisted to `localStorage`.
+The base app still uses **PokeAPI** for paginated search and a master–detail split view. **TanStack Query** handles API fetching and caching. **Zustand** stores selected Pokemon and form submission history. **React Context API** controls light/dark theme with `localStorage` persistence.
+
+### React Forms
+
+Active branch: **`forms`**.
+
+- **Validation:** shared [Zod](https://zod.dev/) schema for both forms (email without regex, image type/size, country list, password match, and more)
+- **State:** [Zustand](https://zustand.docs.pmnd.rs/) store for `countries`, `submissions`, and `lastSubmissionId`
+- **Forms:**
+  - **Uncontrolled** — `FormData`, validate on submit
+  - **React Hook Form** — live validation, disabled submit while invalid
+- **Modal** — reusable accessible dialog via React Portal (focus trap, ESC/outside close, focus return)
+- **Image upload** — PNG/JPEG only, converted to base64 on successful submit; preview in submission history cards
+- **Profile submissions** — history on the main page with a short highlight for the newest entry
 
 ### Environment
 
@@ -14,7 +27,7 @@ Vite + React + TypeScript Pokedex browser for the RS School **API querying in Re
 
 ### Routes
 
-- `/` — search and results (`?page=1`, `?page=2&details=25`)
+- `/` — search, results, profile forms, and submission history (`?page=1`, `?page=2&details=25`)
 - `/about` — author and course links
 - unknown paths — 404 page (React Router catch-all)
 
@@ -25,10 +38,10 @@ Vite + React + TypeScript Pokedex browser for the RS School **API querying in Re
 | `npm run dev` | Local dev server |
 | `npm run build` | Production build |
 | `npm run preview` | Preview production build |
+| `npm run lint` | ESLint |
 | `npm run test` | Unit tests (Vitest) |
 | `npm run test:coverage` | Tests with coverage (statements ≥ 80%) |
-| `npm run lint` | ESLint |
 
 Tooling: **ESLint**, **Prettier**, **Husky** (pre-commit: `lint`, pre-push: `test`).
 
-Active branch for this task: **`api-queries`**.
+GitHub Pages deploy workflow runs on push to **`forms`**.
