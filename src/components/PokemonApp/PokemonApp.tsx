@@ -25,10 +25,22 @@ import { downloadBlobAsFile } from '../../utils/downloadFile';
 import { parsePageParam } from '../../utils/urlParams';
 import { CardList } from '../CardList/index.ts';
 import { CrashOnRender } from '../CrashOnRender/index.ts';
+import { Modal } from '../Modal/index.ts';
 import { Pagination } from '../Pagination/index.ts';
+import {
+  ReactHookProfileForm,
+  UncontrolledProfileForm,
+} from '../ProfileForms/index.ts';
 import { Search } from '../Search/index.ts';
 import { SelectedItemsFlyout } from '../SelectedItemsFlyout/index.ts';
 import '../../app/App.css';
+
+type ActiveProfileForm = 'uncontrolled' | 'react-hook-form';
+
+const PROFILE_FORM_MODAL_TITLES: Record<ActiveProfileForm, string> = {
+  uncontrolled: 'Uncontrolled profile form',
+  'react-hook-form': 'React Hook Form profile',
+};
 
 export function PokemonApp() {
   const queryClient = useQueryClient();
@@ -45,6 +57,8 @@ export function PokemonApp() {
   const [searchInput, setSearchInput] = useState('');
   const [submittedQuery, setSubmittedQuery] = useState<string | null>(null);
   const [simulateCrash, setSimulateCrash] = useState(false);
+  const [activeProfileForm, setActiveProfileForm] =
+    useState<ActiveProfileForm | null>(null);
 
   const resultsQuery = usePokemonResultsQuery(submittedQuery ?? '', page, {
     enabled: submittedQuery !== null,
@@ -216,6 +230,18 @@ export function PokemonApp() {
     downloadBlobAsFile(csv, filename, 'text/csv;charset=utf-8');
   }, [selectedItems]);
 
+  const handleCloseProfileForm = useCallback(() => {
+    setActiveProfileForm(null);
+  }, []);
+
+  const handleOpenUncontrolledForm = useCallback(() => {
+    setActiveProfileForm('uncontrolled');
+  }, []);
+
+  const handleOpenReactHookForm = useCallback(() => {
+    setActiveProfileForm('react-hook-form');
+  }, []);
+
   const handleRefreshResults = useCallback(async () => {
     if (submittedQuery === null) {
       return;
@@ -269,6 +295,31 @@ export function PokemonApp() {
           aria-label="Main Pokemon results panel"
           onClick={handleListPanelClick}
         >
+          <section
+            className="pokemon-app__forms-section"
+            aria-label="Profile forms"
+          >
+            <div className="forms-launcher">
+              <h2 className="forms-launcher__title">Profile forms</h2>
+              <div className="forms-launcher__actions">
+                <button
+                  type="button"
+                  className="forms-launcher__button"
+                  onClick={handleOpenUncontrolledForm}
+                >
+                  Open uncontrolled profile form
+                </button>
+                <button
+                  type="button"
+                  className="forms-launcher__button"
+                  onClick={handleOpenReactHookForm}
+                >
+                  Open React Hook Form profile
+                </button>
+              </div>
+            </div>
+          </section>
+
           <section className="pokemon-app__search-section" aria-label="Search">
             <Search
               value={searchInput}
@@ -357,6 +408,23 @@ export function PokemonApp() {
       />
 
       {simulateCrash ? <CrashOnRender /> : null}
+
+      <Modal
+        isOpen={activeProfileForm !== null}
+        title={
+          activeProfileForm
+            ? PROFILE_FORM_MODAL_TITLES[activeProfileForm]
+            : 'Profile form'
+        }
+        onClose={handleCloseProfileForm}
+      >
+        {activeProfileForm === 'uncontrolled' ? (
+          <UncontrolledProfileForm onSuccess={handleCloseProfileForm} />
+        ) : null}
+        {activeProfileForm === 'react-hook-form' ? (
+          <ReactHookProfileForm onSuccess={handleCloseProfileForm} />
+        ) : null}
+      </Modal>
     </div>
   );
 }

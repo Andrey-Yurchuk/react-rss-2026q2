@@ -2,6 +2,11 @@ import userEvent from '@testing-library/user-event';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { POKEAPI_POKEMON_URL, POKEMON_SEARCH_STORAGE_KEY } from '../../constants';
+import { PROFILE_COUNTRIES } from '../../constants/profileForm';
+import {
+  selectSubmissions,
+  useFormSubmissionsStore,
+} from '../../store/formSubmissionsStore';
 import { useSelectedItemsStore } from '../../store/selectedItemsStore';
 import { seedLocalStorage } from '../../test-utils/mocks';
 import {
@@ -824,5 +829,222 @@ describe('PokemonApp', () => {
       ).not.toBeInTheDocument()
     );
     expect(useSelectedItemsStore.getState().selectedItems).toEqual([]);
+  });
+
+  describe('profile form modals', () => {
+    function resetFormSubmissionsStore() {
+      useFormSubmissionsStore.setState({
+        countries: [...PROFILE_COUNTRIES],
+        submissions: [],
+        lastSubmissionId: null,
+      });
+    }
+
+    function createPngFile(size = 4, name = 'avatar.png'): File {
+      return new File([new Uint8Array(size)], name, { type: 'image/png' });
+    }
+
+    function assignFileToInput(input: HTMLInputElement, file: File) {
+      const fileList = Object.assign([file], {
+        item: (index: number) => fileList[index] ?? null,
+      });
+
+      Object.defineProperty(input, 'files', {
+        configurable: true,
+        value: fileList,
+      });
+    }
+
+    async function fillUncontrolledProfileForm(
+      user: ReturnType<typeof userEvent.setup>
+    ) {
+      await user.type(screen.getByLabelText('Name'), 'Alice');
+      await user.type(screen.getByLabelText('Age'), '28');
+      await user.type(screen.getByLabelText('Email'), 'alice@example.com');
+      await user.selectOptions(screen.getByLabelText('Gender'), 'female');
+      await user.click(
+        screen.getByLabelText('I accept the Terms and Conditions')
+      );
+
+      const imageInput = screen.getByLabelText(
+        'Profile image'
+      ) as HTMLInputElement;
+      assignFileToInput(imageInput, createPngFile());
+
+      await user.type(screen.getByLabelText('Password'), 'Secret1@');
+      await user.type(screen.getByLabelText('Confirm password'), 'Secret1@');
+      await user.type(screen.getByLabelText('Country'), 'Poland');
+    }
+
+    beforeEach(() => {
+      resetFormSubmissionsStore();
+    });
+
+    it('shows two profile form launcher buttons on the main page', () => {
+      renderPokemonApp();
+
+      expect(
+        screen.getByRole('button', {
+          name: /open uncontrolled profile form/i,
+        })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', {
+          name: /open react hook form profile/i,
+        })
+      ).toBeInTheDocument();
+    });
+
+    it('opens the uncontrolled profile form in a dialog', async () => {
+      const user = userEvent.setup();
+
+      renderPokemonApp();
+
+      await user.click(
+        screen.getByRole('button', {
+          name: /open uncontrolled profile form/i,
+        })
+      );
+
+      const dialog = screen.getByRole('dialog');
+      expect(
+        screen.getByRole('heading', { name: /uncontrolled profile form/i })
+      ).toBeInTheDocument();
+      expect(dialog).toContainElement(
+        document.getElementById('uncontrolled-profile-name')
+      );
+    });
+
+    it('opens the React Hook Form profile form in a dialog', async () => {
+      const user = userEvent.setup();
+
+      renderPokemonApp();
+
+      await user.click(
+        screen.getByRole('button', {
+          name: /open react hook form profile/i,
+        })
+      );
+
+      const dialog = screen.getByRole('dialog');
+      expect(
+        screen.getByRole('heading', { name: /react hook form profile/i })
+      ).toBeInTheDocument();
+      expect(dialog).toContainElement(
+        document.getElementById('rhf-profile-name')
+      );
+    });
+
+    it('closes the modal with Escape and returns focus to the trigger button', async () => {
+      const user = userEvent.setup();
+
+      renderPokemonApp();
+
+      const trigger = screen.getByRole('button', {
+        name: /open uncontrolled profile form/i,
+      });
+      await user.click(trigger);
+
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+      await user.keyboard('{Escape}');
+
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      );
+      expect(trigger).toHaveFocus();
+    });
+
+    it('closes the modal with the close button and returns focus to the trigger button', async () => {
+      const user = userEvent.setup();
+
+      renderPokemonApp();
+
+      const trigger = screen.getByRole('button', {
+        name: /open react hook form profile/i,
+      });
+      await user.click(trigger);
+
+      await user.click(screen.getByRole('button', { name: /close dialog/i }));
+
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      );
+      expect(trigger).toHaveFocus();
+    });
+
+    it('keeps search input and results rendering working after opening and closing a modal', async () => {
+      const user = userEvent.setup();
+      loadPokemonResultsMock.mockResolvedValue({
+        items: [
+          {
+            id: 25,
+            name: 'pikachu',
+            description: 'Types: electric. Height: 4, weight: 60.',
+          },
+        ],
+        totalCount: 1,
+      });
+
+      renderPokemonApp();
+
+      await waitFor(() =>
+        expect(screen.getByRole('heading', { name: 'pikachu' })).toBeInTheDocument()
+      );
+
+      await user.click(
+        screen.getByRole('button', {
+          name: /open uncontrolled profile form/i,
+        })
+      );
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+      await user.keyboard('{Escape}');
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      );
+
+      const searchInput = screen.getByLabelText(/search pok.mon by exact name/i);
+      await user.clear(searchInput);
+      await user.type(searchInput, 'pikachu');
+      await user.click(screen.getByRole('button', { name: /search/i }));
+
+      expect(await screen.findByRole('heading', { name: 'pikachu' })).toBeInTheDocument();
+      expect(countResultsCalls('pikachu', 1)).toBe(1);
+    });
+
+    it('closes the modal and stores a submission after a successful uncontrolled form submit', async () => {
+      const user = userEvent.setup();
+
+      renderPokemonApp();
+
+      await user.click(
+        screen.getByRole('button', {
+          name: /open uncontrolled profile form/i,
+        })
+      );
+
+      await fillUncontrolledProfileForm(user);
+      await user.click(screen.getByRole('button', { name: /submit profile/i }));
+
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      );
+
+      const [submission] = selectSubmissions(useFormSubmissionsStore.getState());
+
+      expect(submission).toMatchObject({
+        source: 'uncontrolled',
+        name: 'Alice',
+        age: 28,
+        email: 'alice@example.com',
+        gender: 'female',
+        termsAccepted: true,
+        imageName: 'avatar.png',
+        country: 'Poland',
+      });
+      expect(submission.imageBase64).toMatch(/^data:image\/png;base64,/);
+      expect(submission).not.toHaveProperty('password');
+    });
   });
 });
