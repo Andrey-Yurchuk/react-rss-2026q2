@@ -21,3 +21,5 @@ export { PasswordStrengthIndicator } from './PasswordStrengthIndicator.tsx';
 export type { PasswordStrengthIndicatorProps } from './PasswordStrengthIndicator.tsx';
 export { UncontrolledProfileForm } from './UncontrolledProfileForm.tsx';
 export type { UncontrolledProfileFormProps } from './UncontrolledProfileForm.tsx';
+export { ReactHookProfileForm } from './ReactHookProfileForm.tsx';
+export type { ReactHookProfileFormProps } from './ReactHookProfileForm.tsx';

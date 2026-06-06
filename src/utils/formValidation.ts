@@ -70,9 +70,11 @@ export function createProfileFormSchema(countries: readonly string[]) {
       gender: z.enum(PROFILE_GENDERS, {
         error: 'Gender is required',
       }),
-      termsAccepted: z.literal(true, {
-        error: 'Terms and Conditions must be accepted',
-      }),
+      termsAccepted: z
+        .boolean()
+        .refine((value) => value === true, {
+          message: 'Terms and Conditions must be accepted',
+        }),
       password: z.string().min(1, 'Password is required'),
       confirmPassword: z.string().min(1, 'Confirm password is required'),
       image: z
@@ -108,6 +110,6 @@ export function createProfileFormSchema(countries: readonly string[]) {
     });
 }
 
-export type ProfileFormInput = z.infer<
-  ReturnType<typeof createProfileFormSchema>
->;
+export type ProfileFormSchema = ReturnType<typeof createProfileFormSchema>;
+export type ProfileFormValues = z.input<ProfileFormSchema>;
+export type ProfileFormInput = z.output<ProfileFormSchema>;

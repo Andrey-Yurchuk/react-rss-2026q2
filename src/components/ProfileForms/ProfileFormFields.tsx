@@ -80,7 +80,7 @@ export function ProfileGenderField({
   label,
   error,
   hint,
-  defaultValue = '',
+  defaultValue,
   ...selectProps
 }: ProfileGenderFieldProps) {
   const errorId = buildErrorId(id);
@@ -94,8 +94,8 @@ export function ProfileGenderField({
         id={id}
         name={name}
         className="profile-field__input profile-field__select"
-        defaultValue={defaultValue}
         {...buildFieldAriaProps(id, error)}
+        {...(defaultValue !== undefined ? { defaultValue } : {})}
         {...selectProps}
       >
         <option value="" disabled>
