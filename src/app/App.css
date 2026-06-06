@@ -153,6 +153,8 @@
   border-radius: 10px;
   background: var(--bg);
   box-shadow: var(--shadow);
+  box-sizing: border-box;
+  overflow: visible;
 }
 
 .profile-submissions__title {
@@ -171,6 +173,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
   gap: 0.85rem;
+  align-items: start;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -184,7 +187,8 @@
   display: flex;
   flex-direction: column;
   gap: 0.7rem;
-  height: 100%;
+  box-sizing: border-box;
+  width: 100%;
   padding: 0.8rem;
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -196,9 +200,9 @@
 }
 
 .profile-submission-card--new {
-  border-color: var(--accent-border);
+  border-color: var(--accent);
   background: var(--accent-bg);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 .profile-submission-card__image {

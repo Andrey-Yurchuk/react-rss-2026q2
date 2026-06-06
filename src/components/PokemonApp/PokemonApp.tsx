@@ -321,9 +321,7 @@ export function PokemonApp() {
             </div>
           </section>
 
-          <section className="pokemon-app__submissions-section">
-            <ProfileSubmissions />
-          </section>
+          <ProfileSubmissions />
 
           <section className="pokemon-app__search-section" aria-label="Search">
             <Search

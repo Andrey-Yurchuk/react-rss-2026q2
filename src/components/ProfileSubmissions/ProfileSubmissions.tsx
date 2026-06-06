@@ -128,7 +128,7 @@ export function ProfileSubmissions() {
 
   return (
     <section
-      className="profile-submissions"
+      className="profile-submissions pokemon-app__submissions-section"
       aria-label="Profile form submissions"
     >
       <h2 className="profile-submissions__title">Submitted profiles</h2>
