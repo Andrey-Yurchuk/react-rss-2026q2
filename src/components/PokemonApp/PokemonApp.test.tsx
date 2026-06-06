@@ -855,6 +855,25 @@ describe('PokemonApp', () => {
       });
     }
 
+    async function fillReactHookProfileForm(
+      user: ReturnType<typeof userEvent.setup>
+    ) {
+      await user.type(screen.getByLabelText('Name'), 'Bob');
+      await user.type(screen.getByLabelText('Age'), '31');
+      await user.type(screen.getByLabelText('Email'), 'bob@example.com');
+      await user.selectOptions(screen.getByLabelText('Gender'), 'male');
+      await user.click(
+        screen.getByLabelText('I accept the Terms and Conditions')
+      );
+      await user.upload(
+        screen.getByLabelText('Profile image'),
+        createPngFile(4, 'bob.png')
+      );
+      await user.type(screen.getByLabelText('Password'), 'Secret1@');
+      await user.type(screen.getByLabelText('Confirm password'), 'Secret1@');
+      await user.type(screen.getByLabelText('Country'), 'France');
+    }
+
     async function fillUncontrolledProfileForm(
       user: ReturnType<typeof userEvent.setup>
     ) {
@@ -1057,6 +1076,48 @@ describe('PokemonApp', () => {
           name: 'Profile photo for Alice (avatar.png)',
         })
       ).toHaveAttribute('src', submission.imageBase64);
+    });
+
+    it('closes the modal and shows a React Hook Form submission in history after valid submit', async () => {
+      const user = userEvent.setup();
+
+      renderPokemonApp();
+
+      await user.click(
+        screen.getByRole('button', {
+          name: /open react hook form profile/i,
+        })
+      );
+
+      await fillReactHookProfileForm(user);
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: /submit profile/i })
+        ).toBeEnabled();
+      });
+
+      await user.click(screen.getByRole('button', { name: /submit profile/i }));
+
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      );
+
+      const [submission] = selectSubmissions(useFormSubmissionsStore.getState());
+
+      expect(submission).toMatchObject({
+        source: 'react-hook-form',
+        name: 'Bob',
+        email: 'bob@example.com',
+        gender: 'male',
+        country: 'France',
+        imageName: 'bob.png',
+      });
+      expect(submission).not.toHaveProperty('password');
+
+      expect(screen.getByRole('heading', { name: 'Bob' })).toBeInTheDocument();
+      expect(screen.getByText('bob@example.com')).toBeInTheDocument();
+      expect(screen.getByText('React Hook Form')).toBeInTheDocument();
     });
   });
 });

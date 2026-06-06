@@ -10,6 +10,31 @@ describe('fileToBase64', () => {
     );
   });
 
+  it('rejects when FileReader returns a non-string result', async () => {
+    const file = new File(['hello'], 'avatar.png', { type: 'image/png' });
+    const originalFileReader = globalThis.FileReader;
+
+    class NonStringResultFileReader {
+      public onload: (() => void) | null = null;
+      public result: ArrayBuffer = new ArrayBuffer(8);
+
+      readAsDataURL() {
+        this.onload?.();
+      }
+    }
+
+    globalThis.FileReader =
+      NonStringResultFileReader as unknown as typeof FileReader;
+
+    try {
+      await expect(fileToBase64(file)).rejects.toThrow(
+        'Failed to read file as data URL'
+      );
+    } finally {
+      globalThis.FileReader = originalFileReader;
+    }
+  });
+
   it('rejects when FileReader fails', async () => {
     const file = new File(['hello'], 'avatar.png', { type: 'image/png' });
     const originalFileReader = globalThis.FileReader;

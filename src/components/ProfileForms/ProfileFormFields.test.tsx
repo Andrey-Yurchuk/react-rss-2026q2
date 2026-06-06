@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { render, screen } from '../../test-utils/render';
 import {
   ProfileCountryAutocompleteField,
+  ProfileGenderField,
   ProfileImageUploadField,
+  ProfileTermsField,
   ProfileTextField,
 } from './ProfileFormFields';
 
@@ -72,6 +74,31 @@ describe('ProfileFormFields', () => {
       'list',
       'profile-country-options'
     );
+  });
+
+  it('associates gender field label with select through htmlFor and id', () => {
+    render(
+      <ProfileGenderField id="profile-gender" name="gender" label="Gender" />
+    );
+
+    expect(screen.getByLabelText('Gender')).toHaveAttribute('id', 'profile-gender');
+  });
+
+  it('associates terms checkbox label and exposes aria-invalid when invalid', () => {
+    render(
+      <ProfileTermsField
+        id="profile-terms"
+        name="termsAccepted"
+        label="I accept the Terms and Conditions"
+        error="Terms and Conditions must be accepted"
+      />
+    );
+
+    const checkbox = screen.getByLabelText('I accept the Terms and Conditions');
+
+    expect(checkbox).toHaveAttribute('id', 'profile-terms');
+    expect(checkbox).toHaveAttribute('aria-invalid', 'true');
+    expect(checkbox).toHaveAttribute('aria-describedby', 'profile-terms-error');
   });
 
   it('renders image upload input with file type and png/jpeg accept', () => {

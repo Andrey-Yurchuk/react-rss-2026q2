@@ -137,6 +137,28 @@ describe('formSubmissionsStore', () => {
     expect(selectCountries(state)).toEqual([...PROFILE_COUNTRIES]);
   });
 
+  it('generates a fallback submission id when crypto.randomUUID is unavailable', () => {
+    const originalRandomUUID = crypto.randomUUID;
+
+    Object.defineProperty(crypto, 'randomUUID', {
+      configurable: true,
+      value: undefined,
+    });
+
+    try {
+      useFormSubmissionsStore.getState().addSubmission(createSubmissionInput());
+
+      const [submission] = selectSubmissions(useFormSubmissionsStore.getState());
+
+      expect(submission.id).toMatch(/^profile-submission-\d+-[a-z0-9]+$/);
+    } finally {
+      Object.defineProperty(crypto, 'randomUUID', {
+        configurable: true,
+        value: originalRandomUUID,
+      });
+    }
+  });
+
   it('returns expected data from selectors after multiple submissions', () => {
     useFormSubmissionsStore
       .getState()

@@ -118,6 +118,21 @@ describe('UncontrolledProfileForm', () => {
     ).toBeEnabled();
   });
 
+  it('updates the password strength indicator while typing without controlling the input', async () => {
+    const user = userEvent.setup();
+
+    render(<UncontrolledProfileForm onSuccess={vi.fn()} />);
+
+    await user.type(screen.getByLabelText('Password'), 'Aa1!');
+
+    expect(screen.getByText('1 number')).toHaveClass(
+      'password-strength__item--met'
+    );
+    expect(screen.getByText('1 special character')).toHaveClass(
+      'password-strength__item--met'
+    );
+  });
+
   it('rejects an invalid email on submit', async () => {
     const user = userEvent.setup();
 

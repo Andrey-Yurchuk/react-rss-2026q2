@@ -90,6 +90,22 @@ describe('ProfileSubmissions', () => {
     expect(screen.getByText('React Hook Form')).toBeInTheDocument();
   });
 
+  it('uses a name-only alt when imageName is empty', () => {
+    addSubmissionWithId(
+      'submission-1',
+      createSubmissionInput({
+        name: 'Alice',
+        imageName: '',
+      })
+    );
+
+    render(<ProfileSubmissions />);
+
+    expect(
+      screen.getByRole('img', { name: 'Profile photo for Alice' })
+    ).toBeInTheDocument();
+  });
+
   it('uses the base64 image as the preview source and sets a meaningful alt', () => {
     addSubmissionWithId(
       'submission-1',
