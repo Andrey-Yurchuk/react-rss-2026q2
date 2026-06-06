@@ -62,6 +62,9 @@ describe('Modal', () => {
 
     expect(dialog).toHaveAttribute('aria-modal', 'true');
     expect(dialog).toHaveAttribute('aria-labelledby', title.id);
+    expect(
+      screen.getByRole('button', { name: /close dialog/i })
+    ).toHaveAttribute('aria-label', 'Close dialog');
   });
 
   it('calls onClose when Escape is pressed', async () => {

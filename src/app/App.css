@@ -198,7 +198,7 @@
 .profile-submission-card--new {
   border-color: var(--accent-border);
   background: var(--accent-bg);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent);
 }
 
 .profile-submission-card__image {
@@ -828,26 +828,32 @@
   align-items: center;
   justify-content: center;
   padding: 1.25rem;
-  background: rgba(8, 6, 13, 0.55);
+  background: color-mix(in srgb, var(--text-h) 55%, transparent);
+  overscroll-behavior: contain;
 }
 
 .modal__dialog {
+  display: flex;
+  flex-direction: column;
   width: min(100%, 36rem);
   max-height: calc(100svh - 2.5rem);
-  overflow: auto;
+  overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 16px;
   background: var(--bg);
   box-shadow: var(--shadow);
+  isolation: isolate;
 }
 
 .modal__header {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
   padding: 1rem 1.25rem;
   border-bottom: 1px solid var(--border);
+  background: var(--bg);
 }
 
 .modal__title {
@@ -878,6 +884,10 @@
 }
 
 .modal__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 1.25rem;
 }
 
@@ -900,6 +910,7 @@
 
 .profile-field__input {
   width: 100%;
+  min-width: 0;
   box-sizing: border-box;
   padding: 0.65rem 0.8rem;
   border: 1px solid var(--border);
@@ -907,6 +918,11 @@
   background: var(--bg);
   color: var(--text-h);
   font: inherit;
+  transition: border-color 0.15s ease;
+}
+
+.profile-field__input:hover:not(:disabled) {
+  border-color: var(--accent-border);
 }
 
 .profile-field__input:focus-visible {
@@ -920,6 +936,7 @@
 }
 
 .profile-field__file-input {
+  min-height: 2.75rem;
   padding: 0.45rem 0.55rem;
 }
 
@@ -932,16 +949,23 @@
 .profile-field__checkbox {
   width: 1rem;
   height: 1rem;
+  flex-shrink: 0;
   margin-top: 0.15rem;
   accent-color: var(--accent);
 }
 
+.profile-field__checkbox:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .profile-field__error {
-  min-height: 1.2rem;
+  min-height: 2.4rem;
   margin: 0;
   color: transparent;
   font-size: 0.85rem;
   line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 
 .profile-field__error--visible {
@@ -956,6 +980,13 @@
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+  min-height: 7.25rem;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--social-bg);
 }
 
 .password-strength__title {
@@ -1001,10 +1032,59 @@
 
 .profile-form__submit:disabled {
   cursor: not-allowed;
-  opacity: 0.7;
+  opacity: 0.65;
+  border-color: var(--border);
+  background: var(--border);
+  color: var(--text);
 }
 
 .profile-form__submit:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+@media (max-width: 768px) {
+  .profile-submissions__list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .modal__backdrop {
+    align-items: flex-end;
+    padding: 0.75rem;
+  }
+
+  .modal__dialog {
+    max-height: calc(100svh - 1.5rem);
+    border-radius: 12px;
+  }
+
+  .modal__body {
+    padding: 1rem;
+  }
+
+  .forms-launcher {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .forms-launcher__actions {
+    flex-direction: column;
+  }
+
+  .forms-launcher__button {
+    width: 100%;
+    text-align: center;
+  }
+
+  .profile-form__submit {
+    align-self: stretch;
+    text-align: center;
+  }
+
+  .pokemon-app__forms-section,
+  .pokemon-app__submissions-section {
+    padding: 0.8rem 0.9rem;
+  }
 }

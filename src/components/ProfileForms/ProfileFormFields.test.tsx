@@ -44,11 +44,13 @@ describe('ProfileFormFields', () => {
     );
 
     const input = screen.getByLabelText('Age');
+    const error = document.getElementById('profile-age-error');
 
     expect(input).not.toHaveAttribute('aria-describedby');
-    expect(document.getElementById('profile-age-error')).toHaveClass(
-      'profile-field__error'
-    );
+    expect(input).not.toHaveAttribute('aria-invalid');
+    expect(error).toHaveClass('profile-field__error');
+    expect(error).not.toHaveAttribute('aria-live');
+    expect(error).not.toHaveAttribute('role');
   });
 
   it('renders country autocomplete options from props', () => {

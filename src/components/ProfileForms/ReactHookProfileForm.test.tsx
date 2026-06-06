@@ -133,6 +133,14 @@ describe('ReactHookProfileForm', () => {
     await waitFor(() => {
       expect(screen.getByText('Email format is invalid')).toBeInTheDocument();
     });
+
+    const emailInput = screen.getByLabelText('Email');
+
+    expect(emailInput).toHaveAttribute('aria-invalid', 'true');
+    expect(emailInput).toHaveAttribute(
+      'aria-describedby',
+      'rhf-profile-email-error'
+    );
     expect(
       screen.getByRole('button', { name: /submit profile/i })
     ).toBeDisabled();

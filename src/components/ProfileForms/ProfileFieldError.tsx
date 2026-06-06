@@ -11,7 +11,7 @@ export function ProfileFieldError({ id, message }: ProfileFieldErrorProps) {
         message ? ' profile-field__error--visible' : ''
       }`}
       role={message ? 'alert' : undefined}
-      aria-live="polite"
+      aria-live={message ? 'polite' : undefined}
     >
       {message ?? '\u00A0'}
     </p>
