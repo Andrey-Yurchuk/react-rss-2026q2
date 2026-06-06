@@ -1,0 +1,433 @@
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent,
+} from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { Link, Outlet, useNavigate, useSearchParams } from 'react-router-dom';
+import { POKEMON_SEARCH_STORAGE_KEY } from '../../constants';
+import { useLocalStorage } from '../../hooks/useLocalStorage';
+import {
+  getPokemonListErrorMessage,
+  pokemonQueryKeys,
+  usePokemonResultsQuery,
+} from '../../queries/pokemonQueries.ts';
+import { totalPagesForCount } from '../../services/pokemonApi';
+import { useSelectedItemsStore } from '../../store/selectedItemsStore';
+import {
+  buildSelectedItemsFilename,
+  serializeSelectedItemsToCsv,
+} from '../../utils/csv';
+import { downloadBlobAsFile } from '../../utils/downloadFile';
+import { parsePageParam } from '../../utils/urlParams';
+import { CardList } from '../CardList/index.ts';
+import { CrashOnRender } from '../CrashOnRender/index.ts';
+import { Modal } from '../Modal/index.ts';
+import { Pagination } from '../Pagination/index.ts';
+import {
+  ReactHookProfileForm,
+  UncontrolledProfileForm,
+} from '../ProfileForms/index.ts';
+import { ProfileSubmissions } from '../ProfileSubmissions/index.ts';
+import { Search } from '../Search/index.ts';
+import { SelectedItemsFlyout } from '../SelectedItemsFlyout/index.ts';
+import '../../app/App.css';
+
+type ActiveProfileForm = 'uncontrolled' | 'react-hook-form';
+
+const PROFILE_FORM_MODAL_TITLES: Record<ActiveProfileForm, string> = {
+  uncontrolled: 'Uncontrolled profile form',
+  'react-hook-form': 'React Hook Form profile',
+};
+
+export function PokemonApp() {
+  const queryClient = useQueryClient();
+  const { write: writeSearchToStorage } = useLocalStorage(POKEMON_SEARCH_STORAGE_KEY);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const shouldPersistRef = useRef(false);
+  const lastSubmittedQueryRef = useRef<string | null>(null);
+
+  const page = parsePageParam(searchParams.get('page'));
+  const selectedId = Number(searchParams.get('details'));
+  const hasDetails = Number.isInteger(selectedId) && selectedId > 0;
+
+  const [searchInput, setSearchInput] = useState('');
+  const [submittedQuery, setSubmittedQuery] = useState<string | null>(null);
+  const [simulateCrash, setSimulateCrash] = useState(false);
+  const [activeProfileForm, setActiveProfileForm] =
+    useState<ActiveProfileForm | null>(null);
+
+  const resultsQuery = usePokemonResultsQuery(submittedQuery ?? '', page, {
+    enabled: submittedQuery !== null,
+  });
+
+  const selectedItems = useSelectedItemsStore((state) => state.selectedItems);
+  const toggleSelectedItem = useSelectedItemsStore(
+    (state) => state.toggleSelectedItem
+  );
+  const clearSelectedItems = useSelectedItemsStore(
+    (state) => state.clearSelectedItems
+  );
+  const selectedIds = useMemo(
+    () => new Set(selectedItems.map((item) => item.id)),
+    [selectedItems]
+  );
+  const selectedCount = selectedItems.length;
+  const hasSelection = selectedCount > 0;
+
+  const items = resultsQuery.data?.items ?? [];
+  const totalCount = resultsQuery.data?.totalCount ?? 0;
+  const loading = resultsQuery.isLoading;
+  const refreshing =
+    submittedQuery !== null && resultsQuery.isFetching && !loading;
+  const error = resultsQuery.isError
+    ? getPokemonListErrorMessage(resultsQuery.error)
+    : null;
+
+  useEffect(() => {
+    if (searchParams.has('page')) {
+      return;
+    }
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set('page', '1');
+        return next;
+      },
+      { replace: true }
+    );
+  }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    if (submittedQuery === null) {
+      return;
+    }
+
+    if (resultsQuery.isSuccess) {
+      lastSubmittedQueryRef.current = submittedQuery;
+      if (shouldPersistRef.current) {
+        writeSearchToStorage(submittedQuery);
+        shouldPersistRef.current = false;
+      }
+      return;
+    }
+
+    if (resultsQuery.isError && shouldPersistRef.current) {
+      lastSubmittedQueryRef.current = submittedQuery;
+      writeSearchToStorage(submittedQuery);
+      shouldPersistRef.current = false;
+    }
+  }, [
+    resultsQuery.isSuccess,
+    resultsQuery.isError,
+    submittedQuery,
+    writeSearchToStorage,
+  ]);
+
+  const handleStorageHydrated = useCallback((normalizedFromStorage: string) => {
+    setSearchInput(normalizedFromStorage);
+    setSubmittedQuery(normalizedFromStorage);
+  }, []);
+
+  const handleSearchInputChange = useCallback(
+    (value: string) => {
+      setSearchInput(value);
+      if (searchParams.get('page') === '1') {
+        return;
+      }
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.set('page', '1');
+          return next;
+        },
+        { replace: true }
+      );
+    },
+    [searchParams, setSearchParams]
+  );
+
+  const handleSearchClick = useCallback(() => {
+    const normalized = searchInput.trim().toLowerCase();
+    if (
+      lastSubmittedQueryRef.current !== null &&
+      normalized === lastSubmittedQueryRef.current
+    ) {
+      return;
+    }
+    shouldPersistRef.current = true;
+    if (searchParams.get('page') !== '1') {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.set('page', '1');
+          return next;
+        },
+        { replace: true }
+      );
+    }
+    setSubmittedQuery(normalized);
+  }, [searchInput, searchParams, setSearchParams]);
+
+  const handlePageChange = useCallback(
+    (newPage: number) => {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.set('page', String(newPage));
+        if (hasDetails) {
+          next.set('details', String(selectedId));
+        }
+        return next;
+      });
+    },
+    [hasDetails, selectedId, setSearchParams]
+  );
+
+  const handleCardSelect = useCallback(
+    (id: number) => {
+      navigate({
+        pathname: '/',
+        search: `?page=${page}&details=${id}`,
+      });
+    },
+    [navigate, page]
+  );
+
+  const handleCloseDetails = useCallback(() => {
+    if (!hasDetails) {
+      return;
+    }
+    navigate({ pathname: '/', search: `?page=${page}` });
+  }, [hasDetails, navigate, page]);
+
+  const handleListPanelClick = useCallback(
+    (event: MouseEvent<HTMLElement>) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) {
+        return;
+      }
+      if (target.closest('a, button, input, select, textarea, [role="button"]')) {
+        return;
+      }
+      handleCloseDetails();
+    },
+    [handleCloseDetails]
+  );
+
+  const handleSimulateError = useCallback(() => {
+    setSimulateCrash(true);
+  }, []);
+
+  const handleDownloadSelected = useCallback(() => {
+    if (selectedItems.length === 0) {
+      return;
+    }
+    const csv = serializeSelectedItemsToCsv(selectedItems);
+    const filename = buildSelectedItemsFilename(selectedItems.length);
+    downloadBlobAsFile(csv, filename, 'text/csv;charset=utf-8');
+  }, [selectedItems]);
+
+  const handleCloseProfileForm = useCallback(() => {
+    setActiveProfileForm(null);
+  }, []);
+
+  const handleOpenUncontrolledForm = useCallback(() => {
+    setActiveProfileForm('uncontrolled');
+  }, []);
+
+  const handleOpenReactHookForm = useCallback(() => {
+    setActiveProfileForm('react-hook-form');
+  }, []);
+
+  const handleRefreshResults = useCallback(async () => {
+    if (submittedQuery === null) {
+      return;
+    }
+
+    await queryClient.invalidateQueries({
+      queryKey: pokemonQueryKeys.results(submittedQuery, page),
+      refetchType: 'none',
+    });
+    await resultsQuery.refetch();
+  }, [queryClient, submittedQuery, page, resultsQuery]);
+
+  const totalPages = totalPagesForCount(totalCount);
+  const showPagination = !loading && !error && items.length > 0;
+
+  const containerClassName = [
+    'pokemon-app',
+    hasDetails ? 'pokemon-app--with-details' : '',
+    hasSelection ? 'pokemon-app--with-flyout' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  return (
+    <div className={containerClassName}>
+      <header className="pokemon-app__header">
+        <div>
+          <h1 className="pokemon-app__title">Pokedex browser</h1>
+          <p className="pokemon-app__subtitle">
+            Data from{' '}
+            <a
+              className="pokemon-app__link"
+              href="https://pokeapi.co/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              PokéAPI
+            </a>
+          </p>
+        </div>
+        <nav className="pokemon-app__nav" aria-label="Application navigation">
+          <Link className="pokemon-app__nav-link" to="/about">
+            About
+          </Link>
+        </nav>
+      </header>
+
+      <div className="pokemon-app__main-layout">
+        <main
+          className="pokemon-app__list-panel"
+          aria-label="Main Pokemon results panel"
+          onClick={handleListPanelClick}
+        >
+          <section
+            className="pokemon-app__forms-section"
+            aria-label="Profile forms"
+          >
+            <div className="forms-launcher">
+              <h2 className="forms-launcher__title">Profile forms</h2>
+              <div className="forms-launcher__actions">
+                <button
+                  type="button"
+                  className="forms-launcher__button"
+                  onClick={handleOpenUncontrolledForm}
+                >
+                  Open uncontrolled profile form
+                </button>
+                <button
+                  type="button"
+                  className="forms-launcher__button"
+                  onClick={handleOpenReactHookForm}
+                >
+                  Open React Hook Form profile
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <ProfileSubmissions />
+
+          <section className="pokemon-app__search-section" aria-label="Search">
+            <Search
+              value={searchInput}
+              onChange={handleSearchInputChange}
+              onSearch={handleSearchClick}
+              onStorageHydrated={handleStorageHydrated}
+            />
+          </section>
+
+          <section
+            className="pokemon-app__results-section"
+            aria-label="Search results"
+          >
+            {submittedQuery !== null ? (
+              <div className="pokemon-app__results-toolbar">
+                <button
+                  type="button"
+                  className="pokemon-app__refresh-button"
+                  aria-label="Refresh results"
+                  onClick={() => {
+                    handleRefreshResults().catch(() => undefined);
+                  }}
+                  disabled={resultsQuery.isFetching}
+                >
+                  Refresh results
+                </button>
+              </div>
+            ) : null}
+
+            {loading && (
+              <div className="loading" aria-live="polite" aria-busy="true">
+                <div className="loading__spinner" />
+                <span className="loading__label">Loading…</span>
+              </div>
+            )}
+
+            {refreshing ? (
+              <p className="pokemon-app__refreshing" aria-live="polite">
+                Refreshing…
+              </p>
+            ) : null}
+
+            {!loading && error && (
+              <p className="results__error" role="alert">
+                {error}
+              </p>
+            )}
+
+            {!loading && !error && (
+              <CardList
+                items={items}
+                selectedId={hasDetails ? selectedId : undefined}
+                selectedIds={selectedIds}
+                onCardSelect={handleCardSelect}
+                onSelectionToggle={toggleSelectedItem}
+              />
+            )}
+
+            {showPagination && (
+              <Pagination page={page} totalPages={totalPages} onPageChange={handlePageChange} />
+            )}
+          </section>
+        </main>
+
+        {hasDetails ? (
+          <section className="pokemon-app__details-panel">
+            <Outlet />
+          </section>
+        ) : null}
+      </div>
+
+      <div className="pokemon-app__footer">
+        <button
+          type="button"
+          className="pokemon-app__error-button"
+          onClick={handleSimulateError}
+        >
+          Trigger error (Error Boundary)
+        </button>
+      </div>
+
+      <SelectedItemsFlyout
+        selectedCount={selectedCount}
+        onUnselectAll={clearSelectedItems}
+        onDownload={handleDownloadSelected}
+      />
+
+      {simulateCrash ? <CrashOnRender /> : null}
+
+      <Modal
+        isOpen={activeProfileForm !== null}
+        title={
+          activeProfileForm
+            ? PROFILE_FORM_MODAL_TITLES[activeProfileForm]
+            : 'Profile form'
+        }
+        onClose={handleCloseProfileForm}
+      >
+        {activeProfileForm === 'uncontrolled' ? (
+          <UncontrolledProfileForm onSuccess={handleCloseProfileForm} />
+        ) : null}
+        {activeProfileForm === 'react-hook-form' ? (
+          <ReactHookProfileForm onSuccess={handleCloseProfileForm} />
+        ) : null}
+      </Modal>
+    </div>
+  );
+}
