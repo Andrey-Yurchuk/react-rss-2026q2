@@ -723,3 +723,99 @@
 .modal__body {
   padding: 1.25rem;
 }
+
+.profile-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.profile-field--checkbox {
+  gap: 0.35rem;
+}
+
+.profile-field__label,
+.profile-field__checkbox-label {
+  color: var(--text-h);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.profile-field__input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text-h);
+  font: inherit;
+}
+
+.profile-field__input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-color: var(--accent-border);
+}
+
+.profile-field__select {
+  cursor: pointer;
+}
+
+.profile-field__file-input {
+  padding: 0.45rem 0.55rem;
+}
+
+.profile-field__checkbox-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.profile-field__checkbox {
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.15rem;
+  accent-color: var(--accent);
+}
+
+.profile-field__error {
+  min-height: 1.2rem;
+  margin: 0;
+  color: transparent;
+  font-size: 0.85rem;
+  line-height: 1.2;
+}
+
+.profile-field__error--visible {
+  color: #c2410c;
+}
+
+:root[data-theme='dark'] .profile-field__error--visible {
+  color: #fb923c;
+}
+
+.password-strength {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.password-strength__title {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.password-strength__list {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.password-strength__item--met {
+  color: var(--text-h);
+  font-weight: 600;
+}
