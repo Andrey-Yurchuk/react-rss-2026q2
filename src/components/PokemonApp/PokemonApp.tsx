@@ -31,6 +31,7 @@ import {
   ReactHookProfileForm,
   UncontrolledProfileForm,
 } from '../ProfileForms/index.ts';
+import { ProfileSubmissions } from '../ProfileSubmissions/index.ts';
 import { Search } from '../Search/index.ts';
 import { SelectedItemsFlyout } from '../SelectedItemsFlyout/index.ts';
 import '../../app/App.css';
@@ -318,6 +319,10 @@ export function PokemonApp() {
                 </button>
               </div>
             </div>
+          </section>
+
+          <section className="pokemon-app__submissions-section">
+            <ProfileSubmissions />
           </section>
 
           <section className="pokemon-app__search-section" aria-label="Search">

@@ -1045,6 +1045,18 @@ describe('PokemonApp', () => {
       });
       expect(submission.imageBase64).toMatch(/^data:image\/png;base64,/);
       expect(submission).not.toHaveProperty('password');
+
+      expect(
+        screen.getByRole('region', { name: /profile form submissions/i })
+      ).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Alice' })).toBeInTheDocument();
+      expect(screen.getByText('alice@example.com')).toBeInTheDocument();
+      expect(screen.getByText('Uncontrolled form')).toBeInTheDocument();
+      expect(
+        screen.getByRole('img', {
+          name: 'Profile photo for Alice (avatar.png)',
+        })
+      ).toHaveAttribute('src', submission.imageBase64);
     });
   });
 });
