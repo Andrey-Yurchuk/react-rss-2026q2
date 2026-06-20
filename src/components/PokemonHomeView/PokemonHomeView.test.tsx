@@ -3,6 +3,7 @@ import { useSyncExternalStore } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { POKEAPI_POKEMON_URL, POKEMON_SEARCH_STORAGE_KEY } from '../../constants';
 import { getNavigationSnapshot, subscribeNavigation } from '../../hooks/navigationStore.ts';
+import { Link } from '../../i18n/navigation.ts';
 import { useSelectedItemsStore } from '../../store/selectedItemsStore';
 import { seedLocalStorage } from '../../test-utils/mocks';
 import { TestNavigationProbe } from '../TestNavigationProbe/index.ts';
@@ -11,7 +12,6 @@ import {
   screen,
   waitFor,
 } from '../../test-utils/render';
-import { AboutPage } from '../../pages/AboutPage/index.ts';
 import { PokemonHomeTestHarness } from '../../test-utils/pokemonHomeHarness.tsx';
 import { resetMockNavigation } from '../../test-utils/navigationStore.ts';
 
@@ -46,7 +46,18 @@ function TestHomeAboutSwitch() {
     getNavigationSnapshot
   );
 
-  return pathname === '/about' ? <AboutPage /> : <PokemonHomeTestHarness />;
+  return pathname === '/about' ? <MockAboutPage /> : <PokemonHomeTestHarness />;
+}
+
+function MockAboutPage() {
+  return (
+    <main className="static-page static-page--about">
+      <h1>Pokedex browser</h1>
+      <a href="https://github.com/Andrey-Yurchuk">Andrey Yurchuk</a>
+      <a href="https://rs.school/courses/reactjs">RS School ReactJS course</a>
+      <Link href="/?page=1">Back to Pokemon search</Link>
+    </main>
+  );
 }
 
 beforeEach(() => {

@@ -6,7 +6,7 @@ import { AppShell } from '../components/AppShell/index.ts';
 import { PokemonHomeTestHarness } from '../test-utils/pokemonHomeHarness.tsx';
 import { TestNavigationProbe } from '../components/TestNavigationProbe/index.ts';
 import { getNavigationSnapshot, subscribeNavigation } from '../hooks/navigationStore.ts';
-import { AboutPage } from '../pages/AboutPage/index.ts';
+import { Link } from '../i18n/navigation.ts';
 import { NotFoundPage } from '../pages/NotFoundPage/index.ts';
 import { IntlTestProvider } from '../test-utils/intl.tsx';
 import { createConsoleErrorSpy } from '../test-utils/mocks';
@@ -28,7 +28,18 @@ function TestHomeAboutSwitch() {
     getNavigationSnapshot
   );
 
-  return pathname === '/about' ? <AboutPage /> : <PokemonHomeTestHarness />;
+  return pathname === '/about' ? <MockAboutPage /> : <PokemonHomeTestHarness />;
+}
+
+function MockAboutPage() {
+  return (
+    <main className="static-page static-page--about">
+      <h1>Pokedex browser</h1>
+      <a href="https://github.com/Andrey-Yurchuk">Andrey Yurchuk</a>
+      <a href="https://rs.school/courses/reactjs">RS School ReactJS course</a>
+      <Link href="/?page=1">Back to Pokemon search</Link>
+    </main>
+  );
 }
 
 function renderShell(children: React.ReactNode) {
