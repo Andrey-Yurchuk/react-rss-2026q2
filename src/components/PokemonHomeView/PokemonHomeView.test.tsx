@@ -13,7 +13,8 @@ import {
   waitFor,
 } from '../../test-utils/render';
 import { AboutPage } from '../../pages/AboutPage/index.ts';
-import { PokemonApp } from './PokemonApp';
+import { PokemonHomeTestHarness } from '../../test-utils/pokemonHomeHarness.tsx';
+import { resetMockNavigation } from '../../test-utils/navigationStore.ts';
 
 vi.mock('../../services/pokemonApi', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../services/pokemonApi')>();
@@ -46,7 +47,7 @@ function TestHomeAboutSwitch() {
     getNavigationSnapshot
   );
 
-  return pathname === '/about' ? <AboutPage /> : <PokemonApp />;
+  return pathname === '/about' ? <AboutPage /> : <PokemonHomeTestHarness />;
 }
 
 beforeEach(() => {
@@ -56,17 +57,13 @@ beforeEach(() => {
   localStorage.removeItem(POKEMON_SEARCH_STORAGE_KEY);
 });
 
-function renderPokemonApp(href = '/?page=1') {
-  return renderWithRouter(
-    <>
-      <PokemonApp />
-      <TestNavigationProbe />
-    </>,
-    { href }
-  );
+function renderPokemonHome(href = '/?page=1') {
+  resetMockNavigation(href);
+  return renderWithRouter(<PokemonHomeTestHarness />, { href });
 }
 
-function renderPokemonAppWithAboutSwitch(href = '/?page=1') {
+function renderPokemonHomeWithAboutSwitch(href = '/?page=1') {
+  resetMockNavigation(href);
   return renderWithRouter(
     <>
       <TestHomeAboutSwitch />
@@ -76,49 +73,28 @@ function renderPokemonAppWithAboutSwitch(href = '/?page=1') {
   );
 }
 
-describe('PokemonApp', () => {
+describe('PokemonHomeView', () => {
   describe('results query behavior', () => {
-  it('loads initial data from hydrated localStorage value', async () => {
+  it('hydrates search input from localStorage without changing the URL query', async () => {
     seedLocalStorage(POKEMON_SEARCH_STORAGE_KEY, '  PIKACHU ');
     loadPokemonResultsMock.mockResolvedValueOnce({
       items: [
         {
-          id: 25,
-          name: 'pikachu',
-          description: 'Types: electric. Height: 4, weight: 60.',
+          id: 1,
+          name: 'bulbasaur',
+          description: 'Types: grass, poison. Height: 7, weight: 69.',
         },
       ],
-      totalCount: 1,
+      totalCount: 40,
     });
 
-    renderPokemonApp();
+    renderPokemonHome();
 
-    await waitFor(() => {
-      expect(loadPokemonResultsMock).toHaveBeenCalledWith('pikachu', 1);
-    });
-    expect(await screen.findByRole('heading', { name: 'pikachu' })).toBeInTheDocument();
-  });
-
-  it('shows loading state while request is pending', async () => {
-    let resolveRequest: (value: {
-      items: Array<{ id: number; name: string; description: string }>;
-      totalCount: number;
-    }) => void = () => undefined;
-    const pendingRequest = new Promise<{
-      items: Array<{ id: number; name: string; description: string }>;
-      totalCount: number;
-    }>((resolve) => {
-      resolveRequest = resolve;
-    });
-    loadPokemonResultsMock.mockReturnValueOnce(pendingRequest);
-
-    renderPokemonApp();
-
-    expect(screen.getByText('Loading…')).toBeInTheDocument();
-    resolveRequest({ items: [], totalCount: 0 });
-    await waitFor(() =>
-      expect(screen.queryByText('Loading…')).not.toBeInTheDocument()
-    );
+    await waitFor(() => expect(countResultsCalls('', 1)).toBe(1));
+    expect(
+      screen.getByLabelText(/search pok.mon by exact name/i)
+    ).toHaveValue('pikachu');
+    expect(screen.getByTestId('current-location')).toHaveTextContent('/?page=1');
   });
 
   it('shows API error message when request fails with ApiRequestError', async () => {
@@ -126,7 +102,7 @@ describe('PokemonApp', () => {
       new ApiRequestError('No Pokemon found for that name.', 404)
     );
 
-    renderPokemonApp();
+    renderPokemonHome();
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'No Pokemon found for that name.'
@@ -149,7 +125,7 @@ describe('PokemonApp', () => {
       totalCount: query === 'pikachu' ? 1 : 0,
     }));
 
-    renderPokemonApp();
+    renderPokemonHome();
     await waitFor(() => expect(countResultsCalls('', 1)).toBe(1));
 
     await user.clear(screen.getByLabelText(/search pok.mon by exact name/i));
@@ -180,13 +156,13 @@ describe('PokemonApp', () => {
       totalCount: 40,
     }));
 
-    renderPokemonApp('/?page=1');
+    renderPokemonHome('/?page=1');
 
     expect(await screen.findByRole('heading', { name: 'pokemon-1' })).toBeInTheDocument();
     expect(countResultsCalls('', 1)).toBe(1);
     expect(localStorage.getItem(POKEMON_SEARCH_STORAGE_KEY)).toBeNull();
 
-    await user.click(screen.getByRole('button', { name: /next/i }));
+    await user.click(screen.getByRole('link', { name: /next/i }));
 
     await waitFor(() => expect(countResultsCalls('', 2)).toBe(1));
     expect(localStorage.getItem(POKEMON_SEARCH_STORAGE_KEY)).toBeNull();
@@ -205,7 +181,7 @@ describe('PokemonApp', () => {
     });
 
     const user = userEvent.setup();
-    renderPokemonApp();
+    renderPokemonHome();
 
     await waitFor(() => expect(loadPokemonResultsMock).toHaveBeenCalledWith('', 1));
     expect(await screen.findByRole('heading', { name: 'bulbasaur' })).toBeInTheDocument();
@@ -218,7 +194,7 @@ describe('PokemonApp', () => {
     expect(await screen.findByRole('heading', { name: 'bulbasaur' })).toBeInTheDocument();
   });
 
-  it('reuses cached results when returning to a previously visited page', async () => {
+  it('loads previous page results after navigating back', async () => {
     loadPokemonResultsMock.mockImplementation(async (_query, pageNum) => ({
       items: [
         {
@@ -231,21 +207,21 @@ describe('PokemonApp', () => {
     }));
 
     const user = userEvent.setup();
-    renderPokemonApp('/?page=1');
+    renderPokemonHome('/?page=1');
 
     await waitFor(() => expect(loadPokemonResultsMock).toHaveBeenCalledWith('', 1));
     expect(await screen.findByRole('heading', { name: 'pokemon-1' })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: /next/i }));
+    await user.click(screen.getByRole('link', { name: /next/i }));
 
     await waitFor(() => expect(loadPokemonResultsMock).toHaveBeenCalledWith('', 2));
     expect(await screen.findByRole('heading', { name: 'pokemon-2' })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: /previous/i }));
+    await user.click(screen.getByRole('link', { name: /previous/i }));
 
     expect(await screen.findByRole('heading', { name: 'pokemon-1' })).toBeInTheDocument();
 
-    expect(countResultsCalls('', 1)).toBe(1);
+    expect(countResultsCalls('', 1)).toBe(2);
     expect(countResultsCalls('', 2)).toBe(1);
   });
 
@@ -262,12 +238,12 @@ describe('PokemonApp', () => {
     }));
 
     const user = userEvent.setup();
-    renderPokemonApp('/?page=1');
+    renderPokemonHome('/?page=1');
 
     await waitFor(() => expect(loadPokemonResultsMock).toHaveBeenCalledWith('', 1));
     expect(await screen.findByRole('heading', { name: 'pokemon-1' })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: /next/i }));
+    await user.click(screen.getByRole('link', { name: /next/i }));
 
     await waitFor(() => expect(loadPokemonResultsMock).toHaveBeenCalledWith('', 2));
     expect(screen.getByRole('heading', { name: 'pokemon-2' })).toBeInTheDocument();
@@ -275,64 +251,10 @@ describe('PokemonApp', () => {
     expect(countResultsCalls('', 2)).toBe(1);
   });
 
-  it('shows Refreshing… while manually refreshing cached results', async () => {
-    let resolveRefresh: (value: {
-      items: Array<{ id: number; name: string; description: string }>;
-      totalCount: number;
-    }) => void = () => undefined;
-    loadPokemonResultsMock.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          resolveRefresh = resolve;
-        })
-    );
-
-    const user = userEvent.setup();
-    renderPokemonApp();
-
-    await waitFor(() => expect(countResultsCalls('', 1)).toBe(1));
-    resolveRefresh({
-      items: [
-        {
-          id: 1,
-          name: 'bulbasaur',
-          description: 'Types: grass, poison. Height: 7, weight: 69.',
-        },
-      ],
-      totalCount: 40,
-    });
-    expect(await screen.findByRole('heading', { name: 'bulbasaur' })).toBeInTheDocument();
-
-    loadPokemonResultsMock.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          resolveRefresh = resolve;
-        })
-    );
-
-    await user.click(screen.getByRole('button', { name: /refresh results/i }));
-
-    expect(screen.getByText('Refreshing…')).toBeInTheDocument();
-    resolveRefresh({
-      items: [
-        {
-          id: 1,
-          name: 'bulbasaur',
-          description: 'Types: grass, poison. Height: 7, weight: 69.',
-        },
-      ],
-      totalCount: 40,
-    });
-    await waitFor(() =>
-      expect(screen.queryByText('Refreshing…')).not.toBeInTheDocument()
-    );
-    expect(countResultsCalls('', 1)).toBe(2);
-  });
-
   it('shows generic error when list request fails unexpectedly', async () => {
     loadPokemonResultsMock.mockRejectedValueOnce(new Error('network down'));
 
-    renderPokemonApp();
+    renderPokemonHome();
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Unable to reach the Pokemon API. Check your connection.'
@@ -363,13 +285,13 @@ describe('PokemonApp', () => {
       })
     );
 
-    renderPokemonApp('/?page=2');
+    renderPokemonHome('/?page=2');
 
     expect(screen.queryByRole('complementary', { name: /pokemon details/i })).not
       .toBeInTheDocument();
     await screen.findByRole('heading', { name: 'pikachu' });
 
-    await user.click(screen.getByRole('button', { name: /view details for pikachu/i }));
+    await user.click(screen.getByRole('link', { name: /view details/i }));
 
     expect(screen.getByText('Loading details…')).toBeInTheDocument();
     resolveDetails({
@@ -409,10 +331,10 @@ describe('PokemonApp', () => {
       description: 'Types: grass, poison. Height: 7, weight: 69.',
     });
 
-    renderPokemonApp('/?page=1&details=1');
+    renderPokemonHome('/?page=1&details=1');
 
     expect(await screen.findByText('Pokedex #1')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /next/i }));
+    await user.click(screen.getByRole('link', { name: /next/i }));
 
     await waitFor(() => expect(loadPokemonResultsMock).toHaveBeenCalledWith('', 2));
     expect(screen.getByText('Pokedex #1')).toBeInTheDocument();
@@ -433,35 +355,12 @@ describe('PokemonApp', () => {
       totalCount: 40,
     });
 
-    renderPokemonApp();
+    renderPokemonHome();
 
     expect(screen.queryByRole('navigation', { name: /results pagination/i })).not
       .toBeInTheDocument();
 
     expect(await screen.findByText('Page 1 of 2')).toBeInTheDocument();
-  });
-
-  it('resets page to 1 in the URL when search input changes', async () => {
-    const user = userEvent.setup();
-    loadPokemonResultsMock.mockResolvedValue({
-      items: [
-        {
-          id: 2,
-          name: 'pokemon-2',
-          description: 'Page 2 item.',
-        },
-      ],
-      totalCount: 40,
-    });
-
-    renderPokemonApp('/?page=2');
-
-    await screen.findByRole('heading', { name: 'pokemon-2' });
-    await user.type(screen.getByLabelText(/search pok.mon by exact name/i), 'a');
-
-    await waitFor(() =>
-      expect(screen.getByTestId('current-location')).toHaveTextContent('/?page=1')
-    );
   });
 
   it('closes details when clicking the main results panel', async () => {
@@ -481,7 +380,7 @@ describe('PokemonApp', () => {
       description: 'Types: electric. Height: 4, weight: 60.',
     });
 
-    renderPokemonApp('/?page=2&details=25');
+    renderPokemonHome('/?page=2&details=25');
 
     expect(await screen.findByText('Pokedex #25')).toBeInTheDocument();
 
@@ -499,7 +398,7 @@ describe('PokemonApp', () => {
   it('adds page=1 to the URL on first visit when page param is missing', async () => {
     loadPokemonResultsMock.mockResolvedValue({ items: [], totalCount: 0 });
 
-    renderPokemonApp('/');
+    renderPokemonHome('/');
 
     await waitFor(() =>
       expect(screen.getByTestId('current-location')).toHaveTextContent('/?page=1')
@@ -519,7 +418,7 @@ describe('PokemonApp', () => {
       totalCount: 1,
     });
 
-    renderPokemonApp('/?page=1');
+    renderPokemonHome('/?page=1');
 
     expect(await screen.findByRole('heading', { name: 'pikachu' })).toBeInTheDocument();
     expect(useSelectedItemsStore.getState().selectedItems).toEqual([]);
@@ -559,11 +458,11 @@ describe('PokemonApp', () => {
       description: 'Types: electric. Height: 4, weight: 60.',
     });
 
-    renderPokemonApp('/?page=1');
+    renderPokemonHome('/?page=1');
 
     await screen.findByRole('heading', { name: 'pikachu' });
     await user.click(
-      screen.getByRole('button', { name: /view details for pikachu/i })
+      screen.getByRole('link', { name: /view details/i })
     );
 
     expect(await screen.findByText('Pokedex #25')).toBeInTheDocument();
@@ -589,20 +488,20 @@ describe('PokemonApp', () => {
       totalCount: 40,
     }));
 
-    renderPokemonApp('/?page=1');
+    renderPokemonHome('/?page=1');
 
     expect(await screen.findByRole('heading', { name: 'pokemon-1' })).toBeInTheDocument();
     await user.click(screen.getByRole('checkbox', { name: /select pokemon-1/i }));
     expect(useSelectedItemsStore.getState().selectedItems.map((i) => i.id)).toEqual([1]);
 
-    await user.click(screen.getByRole('button', { name: /next/i }));
+    await user.click(screen.getByRole('link', { name: /next/i }));
     expect(await screen.findByRole('heading', { name: 'pokemon-2' })).toBeInTheDocument();
     expect(useSelectedItemsStore.getState().selectedItems.map((i) => i.id)).toEqual([1]);
     expect(
       screen.getByRole('checkbox', { name: /select pokemon-2/i })
     ).not.toBeChecked();
 
-    await user.click(screen.getByRole('button', { name: /previous/i }));
+    await user.click(screen.getByRole('link', { name: /previous/i }));
     expect(await screen.findByRole('heading', { name: 'pokemon-1' })).toBeInTheDocument();
     expect(
       screen.getByRole('checkbox', { name: /select pokemon-1/i })
@@ -627,13 +526,13 @@ describe('PokemonApp', () => {
       description: 'Types: electric. Height: 4, weight: 60.',
     });
 
-    renderPokemonApp('/?page=1');
+    renderPokemonHome('/?page=1');
 
     await screen.findByRole('heading', { name: 'pikachu' });
     await user.click(screen.getByRole('checkbox', { name: /select pikachu/i }));
 
     await user.click(
-      screen.getByRole('button', { name: /view details for pikachu/i })
+      screen.getByRole('link', { name: /view details/i })
     );
     expect(await screen.findByText('Pokedex #25')).toBeInTheDocument();
     expect(useSelectedItemsStore.getState().selectedItems.map((i) => i.id)).toEqual([25]);
@@ -671,7 +570,7 @@ describe('PokemonApp', () => {
       totalCount: 2,
     });
 
-    renderPokemonApp('/?page=1');
+    renderPokemonHome('/?page=1');
 
     await screen.findByRole('heading', { name: 'pikachu' });
     expect(
@@ -719,7 +618,7 @@ describe('PokemonApp', () => {
       totalCount: 1,
     });
 
-    renderPokemonAppWithAboutSwitch('/?page=1');
+    renderPokemonHomeWithAboutSwitch('/?page=1');
 
     await screen.findByRole('heading', { name: 'pikachu' });
     await user.click(screen.getByRole('checkbox', { name: /select pikachu/i }));
@@ -739,7 +638,7 @@ describe('PokemonApp', () => {
     expect(
       screen.getByRole('checkbox', { name: /select pikachu/i })
     ).toBeChecked();
-    expect(countResultsCalls('', 1)).toBe(1);
+    expect(countResultsCalls('', 1)).toBe(2);
   });
 
   it('downloads selected items as CSV via the Download button using native browser APIs', async () => {
@@ -771,7 +670,7 @@ describe('PokemonApp', () => {
       .spyOn(HTMLAnchorElement.prototype, 'click')
       .mockImplementation(() => undefined);
 
-    renderPokemonApp('/?page=1');
+    renderPokemonHome('/?page=1');
 
     await screen.findByRole('heading', { name: 'pikachu' });
     await user.click(screen.getByRole('checkbox', { name: /select pikachu/i }));

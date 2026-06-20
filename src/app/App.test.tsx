@@ -3,7 +3,7 @@ import { useSyncExternalStore } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppProviders } from '../components/AppProviders/index.ts';
 import { AppShell } from '../components/AppShell/index.ts';
-import { PokemonApp } from '../components/PokemonApp/index.ts';
+import { PokemonHomeTestHarness } from '../test-utils/pokemonHomeHarness.tsx';
 import { TestNavigationProbe } from '../components/TestNavigationProbe/index.ts';
 import { getNavigationSnapshot, subscribeNavigation } from '../hooks/navigationStore.ts';
 import { AboutPage } from '../pages/AboutPage/index.ts';
@@ -28,7 +28,7 @@ function TestHomeAboutSwitch() {
     getNavigationSnapshot
   );
 
-  return pathname === '/about' ? <AboutPage /> : <PokemonApp />;
+  return pathname === '/about' ? <AboutPage /> : <PokemonHomeTestHarness />;
 }
 
 function renderShell(children: React.ReactNode) {

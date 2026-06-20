@@ -283,12 +283,13 @@
   cursor: pointer;
 }
 
-.pagination__button:disabled {
+.pagination__button:disabled,
+.pagination__button--disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
 
-.pagination__button:not(:disabled):hover {
+.pagination__button:not(:disabled):not(.pagination__button--disabled):hover {
   filter: brightness(1.05);
 }
 

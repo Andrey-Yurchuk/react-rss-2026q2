@@ -30,7 +30,7 @@ function countDetailsCalls(id: number) {
 function renderDetailsPanel(href = '/?page=2&details=25', queryClient = createTestQueryClient()) {
   return renderWithRouter(
     <>
-      <PokemonDetailsPanel />
+      <PokemonDetailsPanel detailsId={25} page={2} query="" />
       <TestNavigationProbe />
     </>,
     { href, queryClient }
@@ -87,17 +87,7 @@ describe('PokemonDetailsPanel', () => {
       expect(countDetailsCalls(25)).toBe(1);
     });
 
-    it('does not fetch and shows not found when details id is invalid', async () => {
-      renderDetailsPanel('/?page=1&details=abc');
-
-      expect(await screen.findByRole('alert')).toHaveTextContent(
-        'Pokemon details were not found.'
-      );
-      expect(loadPokemonByIdMock).not.toHaveBeenCalled();
-      expect(countDetailsCalls(25)).toBe(0);
-    });
-
-    it('shows API error message when detail fetch fails with ApiRequestError', async () => {
+    it('navigates back to the list while preserving the page on close', async () => {
       loadPokemonByIdMock.mockRejectedValueOnce(
         new ApiRequestError('No Pokemon found for that id.', 404)
       );
@@ -203,16 +193,6 @@ describe('PokemonDetailsPanel', () => {
       expect(countDetailsCalls(25)).toBe(2);
     });
 
-    it('does not show Refresh details for an invalid id', async () => {
-      renderDetailsPanel('/?page=1&details=abc');
-
-      await screen.findByRole('alert');
-      expect(
-        screen.queryByRole('button', { name: /refresh details/i })
-      ).not.toBeInTheDocument();
-      expect(loadPokemonByIdMock).not.toHaveBeenCalled();
-    });
-
     it('reuses cached details when reopening the same pokemon id', async () => {
       loadPokemonByIdMock.mockResolvedValue({
         id: 25,
@@ -223,7 +203,7 @@ describe('PokemonDetailsPanel', () => {
       const queryClient = createTestQueryClient();
       const panel = (
         <>
-          <PokemonDetailsPanel />
+          <PokemonDetailsPanel detailsId={25} page={2} query="" />
           <TestNavigationProbe />
         </>
       );

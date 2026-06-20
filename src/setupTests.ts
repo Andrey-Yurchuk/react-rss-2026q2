@@ -3,6 +3,7 @@ import { afterEach, beforeEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import { createElement, type MouseEvent, type ReactNode } from 'react';
 import { applyNavigationHref, getNavigationSnapshot } from './hooks/navigationStore.ts';
+import { triggerRefreshHandler } from './hooks/refreshHandlerStore.ts';
 import { useSelectedItemsStore } from './store/selectedItemsStore';
 
 vi.mock('./i18n/navigation.ts', () => ({
@@ -30,7 +31,7 @@ vi.mock('./i18n/navigation.ts', () => ({
   useRouter: () => ({
     replace: (href: string) => applyNavigationHref(href),
     push: (href: string) => applyNavigationHref(href),
-    refresh: vi.fn(),
+    refresh: () => triggerRefreshHandler(),
     back: vi.fn(),
     forward: vi.fn(),
     prefetch: vi.fn(),

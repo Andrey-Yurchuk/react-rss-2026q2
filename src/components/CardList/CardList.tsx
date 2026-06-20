@@ -4,19 +4,12 @@ import { Card } from '../Card/index.ts';
 
 type CardListProps = {
   items: PokemonCardModel[];
-  selectedId?: number;
-  selectedIds?: ReadonlySet<number>;
-  onCardSelect?: (id: number) => void;
-  onSelectionToggle?: (item: PokemonCardModel) => void;
+  page: number;
+  query: string;
+  detailsId: number | null;
 };
 
-export function CardList({
-  items,
-  selectedId,
-  selectedIds,
-  onCardSelect,
-  onSelectionToggle,
-}: CardListProps) {
+export function CardList({ items, page, query, detailsId }: CardListProps) {
   const t = useTranslations('CardList');
 
   if (items.length === 0) {
@@ -29,10 +22,9 @@ export function CardList({
         <Card
           key={item.id}
           item={item}
-          selected={item.id === selectedId}
-          selectionChecked={selectedIds?.has(item.id) ?? false}
-          onSelect={onCardSelect}
-          onSelectionToggle={onSelectionToggle}
+          page={page}
+          query={query}
+          detailsId={detailsId}
         />
       ))}
     </div>

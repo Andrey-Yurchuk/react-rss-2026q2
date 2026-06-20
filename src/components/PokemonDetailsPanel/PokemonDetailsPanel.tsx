@@ -9,41 +9,47 @@ import {
   usePokemonDetailsQuery,
 } from '../../queries/pokemonQueries.ts';
 import { ApiRequestError } from '../../services/pokemonApi.ts';
-import { parsePageParam } from '../../utils/urlParams';
+import {
+  buildHomeSearchQueryString,
+} from '../../utils/homeSearchParams.ts';
 
-export function PokemonDetailsPanel() {
+type PokemonDetailsPanelProps = {
+  detailsId: number;
+  page: number;
+  query: string;
+};
+
+export function PokemonDetailsPanel({
+  detailsId,
+  page,
+  query,
+}: PokemonDetailsPanelProps) {
   const t = useTranslations('DetailsPanel');
   const tErrors = useTranslations('Errors');
   const queryClient = useQueryClient();
-  const { searchParams, navigateToSearch } = useAppSearchParams();
-  const page = parsePageParam(searchParams.get('page'));
-  const parsedId = Number(searchParams.get('details'));
-  const detailsId =
-    Number.isInteger(parsedId) && parsedId > 0 ? parsedId : null;
+  const { navigateToSearch } = useAppSearchParams();
 
   const detailsQuery = usePokemonDetailsQuery(detailsId);
 
-  const invalidId = detailsId === null;
-  const loading = !invalidId && detailsQuery.isLoading;
-  const refreshing = !invalidId && detailsQuery.isFetching && !loading;
-  const error = invalidId
-    ? t('notFound')
-    : detailsQuery.isError
-      ? detailsQuery.error instanceof ApiRequestError
-        ? detailsQuery.error.message
-        : tErrors('detailsGeneric')
-      : null;
+  const loading = detailsQuery.isLoading;
+  const refreshing = detailsQuery.isFetching && !loading;
+  const error = detailsQuery.isError
+    ? detailsQuery.error instanceof ApiRequestError
+      ? detailsQuery.error.message
+      : tErrors('detailsGeneric')
+    : null;
   const details = detailsQuery.data;
 
   const handleClose = () => {
-    navigateToSearch(`page=${page}`);
+    navigateToSearch(
+      buildHomeSearchQueryString({
+        query,
+        page,
+      })
+    );
   };
 
   const handleRefreshDetails = useCallback(async () => {
-    if (detailsId === null) {
-      return;
-    }
-
     await queryClient.invalidateQueries({
       queryKey: pokemonQueryKeys.details(detailsId),
       refetchType: 'none',
@@ -63,19 +69,17 @@ export function PokemonDetailsPanel() {
           >
             {t('close')}
           </button>
-          {detailsId !== null ? (
-            <button
-              type="button"
-              className="details-panel__refresh"
-              aria-label={t('refreshAria')}
-              onClick={() => {
-                handleRefreshDetails().catch(() => undefined);
-              }}
-              disabled={detailsQuery.isFetching}
-            >
-              {t('refresh')}
-            </button>
-          ) : null}
+          <button
+            type="button"
+            className="details-panel__refresh"
+            aria-label={t('refreshAria')}
+            onClick={() => {
+              handleRefreshDetails().catch(() => undefined);
+            }}
+            disabled={detailsQuery.isFetching}
+          >
+            {t('refresh')}
+          </button>
         </div>
       </div>
 

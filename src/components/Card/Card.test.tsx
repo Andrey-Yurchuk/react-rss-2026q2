@@ -1,6 +1,9 @@
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '../../test-utils/render';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { getNavigationSnapshot } from '../../hooks/navigationStore.ts';
+import { useSelectedItemsStore } from '../../store/selectedItemsStore';
+import { render, screen } from '../../test-utils/render';
+import { resetMockNavigation } from '../../test-utils/navigationStore.ts';
 import { Card } from './Card';
 
 const pikachu = {
@@ -9,135 +12,82 @@ const pikachu = {
   description: 'Types: electric. Height: 4, weight: 60.',
 };
 
+const defaultCardProps = {
+  page: 1,
+  query: '',
+  detailsId: null,
+};
+
+beforeEach(() => {
+  useSelectedItemsStore.setState({ selectedItems: [] });
+  resetMockNavigation('/?page=1');
+});
+
 describe('Card', () => {
   it('renders pokemon name and description', () => {
-    render(<Card item={pikachu} />);
+    render(<Card item={pikachu} {...defaultCardProps} />);
 
     expect(screen.getByRole('heading', { name: 'pikachu' })).toBeInTheDocument();
     expect(
       screen.getByText('Types: electric. Height: 4, weight: 60.')
     ).toBeInTheDocument();
-    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('checkbox', { name: /select pikachu/i })
+    ).toBeInTheDocument();
   });
 
-  it('calls onSelect when the card is clicked', async () => {
+  it('navigates to details when the card link is clicked', async () => {
     const user = userEvent.setup();
-    const onSelect = vi.fn();
 
-    render(<Card item={pikachu} onSelect={onSelect} />);
+    render(<Card item={pikachu} {...defaultCardProps} />);
 
-    await user.click(screen.getByRole('button', { name: /view details for pikachu/i }));
+    await user.click(
+      screen.getByRole('link', { name: /view details/i })
+    );
 
-    expect(onSelect).toHaveBeenCalledWith(25);
+    expect(getNavigationSnapshot().searchParams.toString()).toBe(
+      'page=1&details=25'
+    );
   });
 
-  it('calls onSelect when Enter or Space is pressed', () => {
-    const onSelect = vi.fn();
+  it('reflects selected details state in aria-current', () => {
+    render(
+      <Card item={pikachu} {...defaultCardProps} detailsId={25} />
+    );
 
-    render(<Card item={pikachu} selected onSelect={onSelect} />);
-    const card = screen.getByRole('button', { name: /view details for pikachu/i });
-
-    fireEvent.keyDown(card, { key: 'Enter' });
-    fireEvent.keyDown(card, { key: ' ' });
-
-    expect(onSelect).toHaveBeenCalledTimes(2);
-    expect(onSelect).toHaveBeenCalledWith(25);
-  });
-
-  it('renders checkbox with accessible name when onSelectionToggle is provided', () => {
-    render(<Card item={pikachu} onSelectionToggle={vi.fn()} />);
-
-    const checkbox = screen.getByRole('checkbox', { name: /select pikachu/i });
-    expect(checkbox).toBeInTheDocument();
-    expect(checkbox).not.toBeChecked();
+    expect(screen.getByRole('heading', { name: 'pikachu' }).closest('article')).toHaveAttribute(
+      'aria-current',
+      'true'
+    );
   });
 
   it('reflects selectionChecked in the checkbox state', () => {
-    render(
-      <Card
-        item={pikachu}
-        selectionChecked
-        onSelectionToggle={vi.fn()}
-      />
-    );
+    useSelectedItemsStore.setState({
+      selectedItems: [
+        {
+          id: 25,
+          name: 'pikachu',
+          description: pikachu.description,
+          detailsUrl: 'https://pokeapi.co/api/v2/pokemon/25',
+        },
+      ],
+    });
+
+    render(<Card item={pikachu} {...defaultCardProps} />);
 
     expect(
       screen.getByRole('checkbox', { name: /select pikachu/i })
     ).toBeChecked();
   });
 
-  it('calls onSelectionToggle with the item when the checkbox is toggled', async () => {
+  it('toggles Zustand selection when the checkbox is toggled', async () => {
     const user = userEvent.setup();
-    const onSelect = vi.fn();
-    const onSelectionToggle = vi.fn();
 
-    render(
-      <Card
-        item={pikachu}
-        onSelect={onSelect}
-        onSelectionToggle={onSelectionToggle}
-      />
-    );
+    render(<Card item={pikachu} {...defaultCardProps} />);
 
     await user.click(screen.getByRole('checkbox', { name: /select pikachu/i }));
 
-    expect(onSelectionToggle).toHaveBeenCalledTimes(1);
-    expect(onSelectionToggle).toHaveBeenCalledWith(pikachu);
-    expect(onSelect).not.toHaveBeenCalled();
-  });
-
-  it('does not open details when the checkbox is clicked', async () => {
-    const user = userEvent.setup();
-    const onSelect = vi.fn();
-    const onSelectionToggle = vi.fn();
-
-    render(
-      <Card
-        item={pikachu}
-        onSelect={onSelect}
-        onSelectionToggle={onSelectionToggle}
-      />
-    );
-
-    await user.click(screen.getByRole('checkbox', { name: /select pikachu/i }));
-
-    expect(onSelect).not.toHaveBeenCalled();
-  });
-
-  it('opens details on click outside the checkbox even when selection is enabled', async () => {
-    const user = userEvent.setup();
-    const onSelect = vi.fn();
-    const onSelectionToggle = vi.fn();
-
-    render(
-      <Card
-        item={pikachu}
-        onSelect={onSelect}
-        onSelectionToggle={onSelectionToggle}
-      />
-    );
-
-    await user.click(screen.getByRole('heading', { name: 'pikachu' }));
-
-    expect(onSelect).toHaveBeenCalledWith(25);
-    expect(onSelectionToggle).not.toHaveBeenCalled();
-  });
-
-  it('does not open details when Space is pressed while the checkbox has focus', () => {
-    const onSelect = vi.fn();
-    const onSelectionToggle = vi.fn();
-
-    render(
-      <Card
-        item={pikachu}
-        onSelect={onSelect}
-        onSelectionToggle={onSelectionToggle}
-      />
-    );
-
-    const checkbox = screen.getByRole('checkbox', { name: /select pikachu/i });
-    fireEvent.keyDown(checkbox, { key: ' ' });
-
-    expect(onSelect).not.toHaveBeenCalled();
+    expect(useSelectedItemsStore.getState().selectedItems).toHaveLength(1);
+    expect(getNavigationSnapshot().searchParams.toString()).toBe('page=1');
   });
 });
