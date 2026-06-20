@@ -1,5 +1,7 @@
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { AppProviders } from '../components/AppProviders/index.ts';
+import { AppShell } from '../components/AppShell/index.ts';
 import { AppRoutes } from '../routes/AppRoutes';
 import { createConsoleErrorSpy } from '../test-utils/mocks';
 import { render, renderWithRouter, screen, within } from '../test-utils/render';
@@ -13,6 +15,16 @@ vi.mock('../services/pokemonApi', async (importOriginal) => {
   };
 });
 
+function renderApp() {
+  return render(
+    <AppProviders>
+      <AppShell>
+        <App />
+      </AppShell>
+    </AppProviders>
+  );
+}
+
 describe('App', () => {
   beforeEach(() => {
     window.history.replaceState({}, '', '/');
@@ -23,7 +35,7 @@ describe('App', () => {
   });
 
   it('renders the theme toggle at the top of the app shell', () => {
-    render(<App />);
+    renderApp();
 
     const group = screen.getByRole('group', { name: /theme/i });
     expect(group).toBeInTheDocument();
@@ -33,7 +45,7 @@ describe('App', () => {
 
   it('switches the document theme when the user toggles dark mode', async () => {
     const user = userEvent.setup();
-    render(<App />);
+    renderApp();
 
     await user.click(screen.getByRole('button', { name: /dark/i }));
 
@@ -46,7 +58,7 @@ describe('App', () => {
 
   it('keeps the theme toggle visible after navigating to /about', async () => {
     const user = userEvent.setup();
-    render(<App />);
+    renderApp();
 
     await user.click(screen.getByRole('link', { name: /about/i }));
 
@@ -55,7 +67,7 @@ describe('App', () => {
 
   it('persists the selected theme across SPA navigation to /about', async () => {
     const user = userEvent.setup();
-    render(<App />);
+    renderApp();
 
     await user.click(screen.getByRole('button', { name: /dark/i }));
     expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
@@ -75,7 +87,7 @@ describe('App', () => {
   it('exposes the theme toggle on the 404 page for unknown routes', () => {
     window.history.replaceState({}, '', '/totally-unknown-route');
 
-    render(<App />);
+    renderApp();
 
     expect(
       screen.getByRole('heading', { name: /page not found/i })
@@ -90,7 +102,7 @@ describe('App', () => {
     const user = userEvent.setup();
     const consoleErrorSpy = createConsoleErrorSpy();
 
-    render(<App />);
+    renderApp();
     await user.click(
       screen.getByRole('button', { name: /trigger error \(error boundary\)/i })
     );
@@ -104,7 +116,7 @@ describe('App', () => {
   it('navigates to About page from the main app', async () => {
     const user = userEvent.setup();
 
-    render(<App />);
+    renderApp();
     await user.click(screen.getByRole('link', { name: /about/i }));
 
     expect(

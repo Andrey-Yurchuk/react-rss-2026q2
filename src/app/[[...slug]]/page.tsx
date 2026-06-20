@@ -1,4 +1,3 @@
-import '../../styles/index.css';
 import { ClientOnly } from './client';
 
 export function generateStaticParams() {
