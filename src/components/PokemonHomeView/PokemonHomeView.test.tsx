@@ -581,7 +581,7 @@ describe('PokemonHomeView', () => {
     expect(countResultsCalls('', 1)).toBe(2);
   });
 
-  it('downloads selected items as CSV via the Download button using native browser APIs', async () => {
+  it('downloads selected items as CSV via server route response', async () => {
     const user = userEvent.setup();
     loadPokemonResultsMock.mockResolvedValue({
       items: [
@@ -593,6 +593,22 @@ describe('PokemonHomeView', () => {
       ],
       totalCount: 1,
     });
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(
+        [
+          'id,name,description,detailsUrl',
+          '25,pikachu,"Types: electric, fly. Height: 4, weight: 60.",https://pokeapi.co/api/v2/pokemon/25',
+        ].join('\r\n'),
+        {
+          status: 200,
+          headers: {
+            'Content-Type': 'text/csv; charset=utf-8',
+            'Content-Disposition': 'attachment; filename="1_items.csv"',
+          },
+        }
+      )
+    );
+    vi.stubGlobal('fetch', fetchMock);
 
     if (typeof URL.createObjectURL !== 'function') {
       URL.createObjectURL = () => '';
@@ -627,6 +643,22 @@ describe('PokemonHomeView', () => {
 
     await user.click(screen.getByRole('button', { name: /download/i }));
 
+    expect(fetchMock).toHaveBeenCalledWith('/api/selected-pokemon.csv', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        items: [
+          {
+            id: 25,
+            name: 'pikachu',
+            description: 'Types: electric, fly. Height: 4, weight: 60.',
+            detailsUrl: `${POKEAPI_POKEMON_URL}/25`,
+          },
+        ],
+      }),
+    });
     expect(createObjectURLSpy).toHaveBeenCalledTimes(1);
     const blob = createObjectURLSpy.mock.calls[0][0] as Blob;
     expect(blob).toBeInstanceOf(Blob);
@@ -656,5 +688,39 @@ describe('PokemonHomeView', () => {
       ).not.toBeInTheDocument()
     );
     expect(useSelectedItemsStore.getState().selectedItems).toEqual([]);
+    vi.unstubAllGlobals();
+  });
+
+  it('shows inline error when csv download request fails', async () => {
+    const user = userEvent.setup();
+    loadPokemonResultsMock.mockResolvedValue({
+      items: [
+        {
+          id: 25,
+          name: 'pikachu',
+          description: 'Types: electric. Height: 4, weight: 60.',
+        },
+      ],
+      totalCount: 1,
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>().mockResolvedValue(
+        new Response(JSON.stringify({ error: 'Download failed.' }), {
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+      )
+    );
+
+    renderPokemonHome('/?page=1');
+    await screen.findByRole('heading', { name: 'pikachu' });
+    await user.click(screen.getByRole('checkbox', { name: /select pikachu/i }));
+    await user.click(screen.getByRole('button', { name: /download/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Download failed.');
+    vi.unstubAllGlobals();
   });
 });

@@ -49,7 +49,9 @@
     "label": "Selected Pokemon",
     "count": "{count, plural, one {# item selected} other {# items selected}}",
     "unselectAll": "Unselect all",
-    "download": "Download"
+    "download": "Download",
+    "downloading": "Downloading…",
+    "downloadError": "Unable to download selected items."
   },
   "DetailsPanel": {
     "label": "Pokemon details",

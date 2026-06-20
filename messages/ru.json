@@ -49,7 +49,9 @@
     "label": "Выбранные Pokemon",
     "count": "{count, plural, one {Выбран # элемент} few {Выбрано # элемента} many {Выбрано # элементов} other {Выбрано # элементов}}",
     "unselectAll": "Снять выбор",
-    "download": "Скачать"
+    "download": "Скачать",
+    "downloading": "Скачивание…",
+    "downloadError": "Не удалось скачать выбранные элементы."
   },
   "DetailsPanel": {
     "label": "Подробности Pokemon",

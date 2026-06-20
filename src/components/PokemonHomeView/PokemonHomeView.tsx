@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import {
   type ReactNode,
+  useCallback,
   useMemo,
   useState,
 } from 'react';
@@ -12,10 +13,6 @@ import {
   totalPagesForCount,
 } from '../../services/pokemonApi';
 import { useSelectedItemsStore } from '../../store/selectedItemsStore';
-import {
-  buildSelectedItemsFilename,
-  serializeSelectedItemsToCsv,
-} from '../../utils/csv';
 import { downloadBlobAsFile } from '../../utils/downloadFile';
 import { CardList } from '../CardList/index.ts';
 import { CrashOnRender } from '../CrashOnRender/index.ts';
@@ -48,7 +45,10 @@ export function PokemonHomeView({
   detailsPanel,
 }: PokemonHomeViewProps) {
   const t = useTranslations('PokemonApp');
+  const tFlyout = useTranslations('SelectedFlyout');
   const [simulateCrash, setSimulateCrash] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   const hasDetails = detailsId !== null;
   const selectedItems = useSelectedItemsStore((state) => state.selectedItems);
@@ -61,14 +61,41 @@ export function PokemonHomeView({
   const totalPages = totalPagesForCount(totalCount);
   const showPagination = errorMessage === null && items.length > 0;
 
-  const handleDownloadSelected = () => {
+  const handleDownloadSelected = useCallback(async () => {
     if (selectedItems.length === 0) {
       return;
     }
-    const csv = serializeSelectedItemsToCsv(selectedItems);
-    const filename = buildSelectedItemsFilename(selectedItems.length);
-    downloadBlobAsFile(csv, filename, 'text/csv;charset=utf-8');
-  };
+
+    setIsDownloading(true);
+    setDownloadError(null);
+
+    try {
+      const response = await fetch('/api/selected-pokemon.csv', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ items: selectedItems }),
+      });
+
+      if (!response.ok) {
+        const responsePayload = (await response.json()) as { error?: string };
+        throw new Error(responsePayload.error ?? tFlyout('downloadError'));
+      }
+
+      const disposition = response.headers.get('Content-Disposition');
+      const filenameMatch = disposition?.match(/filename="([^"]+)"/);
+      const filename = filenameMatch?.[1] ?? `${selectedItems.length}_items.csv`;
+      const blob = await response.blob();
+      downloadBlobAsFile(blob, filename);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : tFlyout('downloadError');
+      setDownloadError(message);
+    } finally {
+      setIsDownloading(false);
+    }
+  }, [selectedItems, tFlyout]);
 
   const containerClassName = useMemo(
     () =>
@@ -169,6 +196,8 @@ export function PokemonHomeView({
         selectedCount={selectedCount}
         onUnselectAll={clearSelectedItems}
         onDownload={handleDownloadSelected}
+        isDownloading={isDownloading}
+        downloadError={downloadError}
       />
 
       {simulateCrash ? <CrashOnRender /> : null}

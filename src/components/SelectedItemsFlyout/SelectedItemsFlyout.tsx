@@ -3,13 +3,17 @@ import { useTranslations } from 'next-intl';
 type SelectedItemsFlyoutProps = {
   selectedCount: number;
   onUnselectAll: () => void;
-  onDownload: () => void;
+  onDownload: () => Promise<void>;
+  isDownloading?: boolean;
+  downloadError?: string | null;
 };
 
 export function SelectedItemsFlyout({
   selectedCount,
   onUnselectAll,
   onDownload,
+  isDownloading = false,
+  downloadError = null,
 }: SelectedItemsFlyoutProps) {
   const t = useTranslations('SelectedFlyout');
 
@@ -33,11 +37,19 @@ export function SelectedItemsFlyout({
         <button
           type="button"
           className="selected-flyout__button"
-          onClick={onDownload}
+          onClick={() => {
+            onDownload().catch(() => undefined);
+          }}
+          disabled={isDownloading}
         >
-          {t('download')}
+          {isDownloading ? t('downloading') : t('download')}
         </button>
       </div>
+      {downloadError ? (
+        <p className="selected-flyout__error" role="alert">
+          {downloadError}
+        </p>
+      ) : null}
     </section>
   );
 }
