@@ -14,9 +14,8 @@ function normalizeBasePath(value) {
 const basePath = normalizeBasePath(process.env.NEXT_PUBLIC_BASE_PATH);
 
 const nextConfig = {
-  output: 'export',
   distDir: './dist',
-  pageExtensions: ['page.tsx', 'page.ts', 'page.jsx', 'page.js'],
+  ...(process.env.NEXT_STATIC_EXPORT === '1' ? { output: 'export' } : {}),
   ...(basePath ? { basePath } : {}),
 };
 

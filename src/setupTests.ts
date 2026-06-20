@@ -5,6 +5,7 @@ import { createElement, type MouseEvent, type ReactNode } from 'react';
 import { applyNavigationHref, getNavigationSnapshot } from './hooks/navigationStore.ts';
 import { triggerRefreshHandler } from './hooks/refreshHandlerStore.ts';
 import { useSelectedItemsStore } from './store/selectedItemsStore';
+import { resetThemeStoreForTests } from './context/ThemeContext.tsx';
 
 vi.mock('./i18n/navigation.ts', () => ({
   Link: ({
@@ -50,4 +51,5 @@ afterEach(() => {
 beforeEach(() => {
   localStorage.clear();
   useSelectedItemsStore.setState({ selectedItems: [] });
+  resetThemeStoreForTests();
 });

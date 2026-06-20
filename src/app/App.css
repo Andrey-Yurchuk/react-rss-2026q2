@@ -517,6 +517,7 @@
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
+  text-decoration: none;
 }
 
 .card__button:hover {
@@ -587,6 +588,7 @@
   font: inherit;
   font-size: 0.85rem;
   cursor: pointer;
+  text-decoration: none;
 }
 
 .details-panel__close:hover {

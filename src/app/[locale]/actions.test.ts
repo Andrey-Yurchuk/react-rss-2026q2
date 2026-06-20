@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildSearchRedirectHref } from './actions';
+import { buildSearchRedirectHref } from './searchRedirect';
 
 describe('buildSearchRedirectHref', () => {
   it('builds locale-aware redirect with normalized query', () => {
