@@ -1,19 +1,26 @@
-import { getTranslations } from 'next-intl/server';
+'use client';
+
+import { useTranslations } from 'next-intl';
 import type { PokemonCardModel } from '../../services/pokemonApi';
 import { buildHomeSearchHref } from '../../utils/homeSearchParams.ts';
 import { CardContent } from './CardContent.tsx';
 import { CardSelectionShell } from './CardSelectionShell.tsx';
 import { SelectedPokemonCheckbox } from './SelectedPokemonCheckbox.tsx';
 
-export type CardProps = {
+export type PokemonCardClientProps = {
   item: PokemonCardModel;
   page: number;
   query: string;
   detailsId: number | null;
 };
 
-export async function Card({ item, page, query, detailsId }: CardProps) {
-  const t = await getTranslations('Card');
+export function PokemonCardClient({
+  item,
+  page,
+  query,
+  detailsId,
+}: PokemonCardClientProps) {
+  const t = useTranslations('Card');
   const detailsSelected = item.id === detailsId;
   const detailsHref = buildHomeSearchHref({
     query,

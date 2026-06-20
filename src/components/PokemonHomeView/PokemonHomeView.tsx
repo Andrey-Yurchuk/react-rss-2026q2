@@ -8,38 +8,26 @@ import {
   useState,
 } from 'react';
 import { Link } from '../../i18n/navigation.ts';
-import {
-  type PokemonCardModel,
-  totalPagesForCount,
-} from '../../services/pokemonApi';
 import { useSelectedItemsStore } from '../../store/selectedItemsStore';
 import { downloadBlobAsFile } from '../../utils/downloadFile';
-import { CardList } from '../CardList/index.ts';
 import { CrashOnRender } from '../CrashOnRender/index.ts';
-import { PaginationNav } from '../PaginationNav/index.ts';
 import { SearchForm } from '../SearchForm/index.ts';
 import { SelectedItemsFlyout } from '../SelectedItemsFlyout/index.ts';
 import '../../app/App.css';
 
 export type PokemonHomeViewProps = {
-  page: number;
   query: string;
   detailsId: number | null;
-  items: PokemonCardModel[];
-  totalCount: number;
-  errorMessage: string | null;
+  resultsSection: ReactNode;
   searchAction?: (formData: FormData) => void | Promise<void>;
   onSearchSubmitClient?: (normalizedQuery: string) => void;
   detailsPanel?: ReactNode;
 };
 
 export function PokemonHomeView({
-  page,
   query,
   detailsId,
-  items,
-  totalCount,
-  errorMessage,
+  resultsSection,
   searchAction,
   onSearchSubmitClient,
   detailsPanel,
@@ -57,9 +45,6 @@ export function PokemonHomeView({
   );
   const selectedCount = selectedItems.length;
   const hasSelection = selectedCount > 0;
-
-  const totalPages = totalPagesForCount(totalCount);
-  const showPagination = errorMessage === null && items.length > 0;
 
   const handleDownloadSelected = useCallback(async () => {
     if (selectedItems.length === 0) {
@@ -153,29 +138,7 @@ export function PokemonHomeView({
             className="pokemon-app__results-section"
             aria-label={t('resultsSectionLabel')}
           >
-            {errorMessage ? (
-              <p className="results__error" role="alert">
-                {errorMessage}
-              </p>
-            ) : (
-              <>
-                <CardList
-                  items={items}
-                  page={page}
-                  query={query}
-                  detailsId={detailsId}
-                />
-
-                {showPagination ? (
-                  <PaginationNav
-                    page={page}
-                    totalPages={totalPages}
-                    query={query}
-                    detailsId={detailsId}
-                  />
-                ) : null}
-              </>
-            )}
+            {resultsSection}
           </section>
         </main>
 

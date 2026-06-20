@@ -2,7 +2,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useSelectedItemsStore } from '../../store/selectedItemsStore';
 import { render, screen } from '../../test-utils/render';
-import { CardList } from './CardList';
+import { CardListClient } from './CardListClient';
 
 const pikachu = {
   id: 25,
@@ -26,10 +26,10 @@ beforeEach(() => {
   useSelectedItemsStore.setState({ selectedItems: [] });
 });
 
-describe('CardList', () => {
+describe('CardListClient', () => {
   it('renders all cards when items are provided', () => {
     render(
-      <CardList items={[pikachu, bulbasaur]} {...defaultListProps} />
+      <CardListClient items={[pikachu, bulbasaur]} {...defaultListProps} />
     );
 
     expect(screen.getByRole('heading', { name: 'pikachu' })).toBeInTheDocument();
@@ -40,7 +40,7 @@ describe('CardList', () => {
   });
 
   it('shows empty state when items are empty', () => {
-    render(<CardList items={[]} {...defaultListProps} />);
+    render(<CardListClient items={[]} {...defaultListProps} />);
 
     expect(screen.getByText('No results to show.')).toBeInTheDocument();
   });
@@ -58,7 +58,7 @@ describe('CardList', () => {
     });
 
     render(
-      <CardList items={[pikachu, bulbasaur]} {...defaultListProps} />
+      <CardListClient items={[pikachu, bulbasaur]} {...defaultListProps} />
     );
 
     expect(
@@ -73,7 +73,7 @@ describe('CardList', () => {
     const user = userEvent.setup();
 
     render(
-      <CardList items={[pikachu, bulbasaur]} {...defaultListProps} />
+      <CardListClient items={[pikachu, bulbasaur]} {...defaultListProps} />
     );
 
     await user.click(

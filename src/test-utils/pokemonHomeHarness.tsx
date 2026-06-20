@@ -1,4 +1,6 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
+import { CardListClient } from '../components/CardList/CardListClient.tsx';
+import { PaginationNav } from '../components/PaginationNav/index.ts';
 import { PokemonHomeView } from '../components/PokemonHomeView/index.ts';
 import { TestNavigationProbe } from '../components/TestNavigationProbe/index.ts';
 import {
@@ -14,7 +16,11 @@ import {
   getPokemonDetailsErrorMessage,
   getPokemonListErrorMessage,
 } from '../queries/pokemonQueries.ts';
-import { loadPokemonById, loadPokemonResults } from '../services/pokemonApi.ts';
+import {
+  loadPokemonById,
+  loadPokemonResults,
+  totalPagesForCount,
+} from '../services/pokemonApi.ts';
 import {
   buildHomeSearchHref,
   buildHomeSearchQueryString,
@@ -184,15 +190,38 @@ export function PokemonHomeTestHarness() {
       </section>
     ) : null;
 
-  return (
+  const showPagination = state.errorMessage === null && state.items.length > 0;
+  const totalPages = totalPagesForCount(state.totalCount);
+
+  const resultsSection = state.errorMessage ? (
+    <p className="results__error" role="alert">
+      {state.errorMessage}
+    </p>
+  ) : (
     <>
-      <PokemonHomeView
+      <CardListClient
+        items={state.items}
         page={params.page}
         query={params.query}
         detailsId={params.detailsId}
-        items={state.items}
-        totalCount={state.totalCount}
-        errorMessage={state.errorMessage}
+      />
+      {showPagination ? (
+        <PaginationNav
+          page={params.page}
+          totalPages={totalPages}
+          query={params.query}
+          detailsId={params.detailsId}
+        />
+      ) : null}
+    </>
+  );
+
+  return (
+    <>
+      <PokemonHomeView
+        query={params.query}
+        detailsId={params.detailsId}
+        resultsSection={resultsSection}
         onSearchSubmitClient={(normalizedQuery) => {
           applyNavigationHref(
             `/?${buildHomeSearchQueryString({ query: normalizedQuery, page: 1 })}`

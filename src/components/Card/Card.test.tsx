@@ -4,7 +4,7 @@ import { getNavigationSnapshot } from '../../hooks/navigationStore.ts';
 import { useSelectedItemsStore } from '../../store/selectedItemsStore';
 import { render, screen } from '../../test-utils/render';
 import { resetMockNavigation } from '../../test-utils/navigationStore.ts';
-import { Card } from './Card';
+import { PokemonCardClient } from './PokemonCardClient';
 
 const pikachu = {
   id: 25,
@@ -23,9 +23,9 @@ beforeEach(() => {
   resetMockNavigation('/?page=1');
 });
 
-describe('Card', () => {
+describe('PokemonCardClient', () => {
   it('renders pokemon name and description', () => {
-    render(<Card item={pikachu} {...defaultCardProps} />);
+    render(<PokemonCardClient item={pikachu} {...defaultCardProps} />);
 
     expect(screen.getByRole('heading', { name: 'pikachu' })).toBeInTheDocument();
     expect(
@@ -39,7 +39,7 @@ describe('Card', () => {
   it('navigates to details when the card link is clicked', async () => {
     const user = userEvent.setup();
 
-    render(<Card item={pikachu} {...defaultCardProps} />);
+    render(<PokemonCardClient item={pikachu} {...defaultCardProps} />);
 
     await user.click(
       screen.getByRole('link', { name: /view details/i })
@@ -52,7 +52,7 @@ describe('Card', () => {
 
   it('reflects selected details state in aria-current', () => {
     render(
-      <Card item={pikachu} {...defaultCardProps} detailsId={25} />
+      <PokemonCardClient item={pikachu} {...defaultCardProps} detailsId={25} />
     );
 
     expect(screen.getByRole('heading', { name: 'pikachu' }).closest('article')).toHaveAttribute(
@@ -73,7 +73,7 @@ describe('Card', () => {
       ],
     });
 
-    render(<Card item={pikachu} {...defaultCardProps} />);
+    render(<PokemonCardClient item={pikachu} {...defaultCardProps} />);
 
     expect(
       screen.getByRole('checkbox', { name: /select pikachu/i })
@@ -83,7 +83,7 @@ describe('Card', () => {
   it('toggles Zustand selection when the checkbox is toggled', async () => {
     const user = userEvent.setup();
 
-    render(<Card item={pikachu} {...defaultCardProps} />);
+    render(<PokemonCardClient item={pikachu} {...defaultCardProps} />);
 
     await user.click(screen.getByRole('checkbox', { name: /select pikachu/i }));
 
