@@ -1,3 +1,5 @@
+import { useTranslations } from 'next-intl';
+
 type SelectedItemsFlyoutProps = {
   selectedCount: number;
   onUnselectAll: () => void;
@@ -9,16 +11,16 @@ export function SelectedItemsFlyout({
   onUnselectAll,
   onDownload,
 }: SelectedItemsFlyoutProps) {
+  const t = useTranslations('SelectedFlyout');
+
   if (selectedCount === 0) {
     return null;
   }
 
-  const itemWord = selectedCount === 1 ? 'item' : 'items';
-
   return (
-    <section className="selected-flyout" aria-label="Selected Pokemon">
+    <section className="selected-flyout" aria-label={t('label')}>
       <p className="selected-flyout__count" aria-live="polite">
-        {selectedCount} {itemWord} selected
+        {t('count', { count: selectedCount })}
       </p>
       <div className="selected-flyout__actions">
         <button
@@ -26,14 +28,14 @@ export function SelectedItemsFlyout({
           className="selected-flyout__button selected-flyout__button--secondary"
           onClick={onUnselectAll}
         >
-          Unselect all
+          {t('unselectAll')}
         </button>
         <button
           type="button"
           className="selected-flyout__button"
           onClick={onDownload}
         >
-          Download
+          {t('download')}
         </button>
       </div>
     </section>

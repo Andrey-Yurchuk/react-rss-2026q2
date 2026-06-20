@@ -1,19 +1,22 @@
+'use client';
+
+import { useTranslations } from 'next-intl';
 import { Link } from 'react-router-dom';
 import '../../app/App.css';
 
 export function AboutPage() {
+  const t = useTranslations('AboutPage');
+
   return (
     <main className="static-page static-page--about">
-      <p className="static-page__eyebrow">About this app</p>
-      <h1>Pokedex browser</h1>
-      <p className="static-page__lead">
-        A React learning project where you can search Pokemon, open a detailed Pokemon card, and browse results with pagination
-      </p>
+      <p className="static-page__eyebrow">{t('eyebrow')}</p>
+      <h1>{t('title')}</h1>
+      <p className="static-page__lead">{t('lead')}</p>
 
       <section className="about-card" aria-labelledby="about-author-title">
-        <h2 id="about-author-title">Author</h2>
+        <h2 id="about-author-title">{t('authorTitle')}</h2>
         <p>
-          Built by{' '}
+          {t('authorLead')}{' '}
           <a
             className="static-page__link"
             href="https://github.com/Andrey-Yurchuk"
@@ -26,9 +29,9 @@ export function AboutPage() {
       </section>
 
       <section className="about-card" aria-labelledby="about-course-title">
-        <h2 id="about-course-title">Course</h2>
+        <h2 id="about-course-title">{t('courseTitle')}</h2>
         <p>
-          This project is part of the{' '}
+          {t('courseLead')}{' '}
           <a
             className="static-page__link"
             href="https://rs.school/courses/reactjs"
@@ -41,7 +44,7 @@ export function AboutPage() {
       </section>
 
       <Link className="static-page__home-link" to="/?page=1">
-        Back to Pokemon search
+        {t('backHome')}
       </Link>
     </main>
   );

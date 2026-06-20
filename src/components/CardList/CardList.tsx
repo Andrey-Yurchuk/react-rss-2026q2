@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl';
 import type { PokemonCardModel } from '../../services/pokemonApi';
 import { Card } from '../Card/index.ts';
 
@@ -16,9 +17,12 @@ export function CardList({
   onCardSelect,
   onSelectionToggle,
 }: CardListProps) {
+  const t = useTranslations('CardList');
+
   if (items.length === 0) {
-    return <p className="card-list__empty">No results to show.</p>;
+    return <p className="card-list__empty">{t('empty')}</p>;
   }
+
   return (
     <div className="card-list">
       {items.map((item) => (

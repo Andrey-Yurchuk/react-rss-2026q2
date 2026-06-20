@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl';
 import type {
   ChangeEvent,
   KeyboardEvent,
@@ -20,6 +21,8 @@ export function Card({
   onSelect,
   onSelectionToggle,
 }: CardProps) {
+  const t = useTranslations('Card');
+
   const openDetails = () => {
     onSelect?.(item.id);
   };
@@ -72,7 +75,7 @@ export function Card({
       onKeyDown={onSelect ? handleArticleKeyDown : undefined}
       role={onSelect ? 'button' : undefined}
       tabIndex={onSelect ? 0 : undefined}
-      aria-label={onSelect ? `View details for ${item.name}` : undefined}
+      aria-label={onSelect ? t('viewDetailsFor', { name: item.name }) : undefined}
     >
       {onSelectionToggle ? (
         <label className="card__selection" onClick={handleLabelClick}>
@@ -84,14 +87,16 @@ export function Card({
             onClick={handleCheckboxClick}
             onKeyDown={handleCheckboxKeyDown}
           />
-          <span className="card__selection-label">Select {item.name}</span>
+          <span className="card__selection-label">
+            {t('select', { name: item.name })}
+          </span>
         </label>
       ) : null}
       <h3 className="card__name">{item.name}</h3>
       <p className="card__description">{item.description}</p>
       {onSelect ? (
         <span className="card__button" aria-hidden="true">
-          View details
+          {t('viewDetails')}
         </span>
       ) : null}
     </article>

@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl';
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 
 type AppErrorBoundaryProps = {
@@ -7,6 +8,17 @@ type AppErrorBoundaryProps = {
 type AppErrorBoundaryState = {
   hasError: boolean;
 };
+
+function ErrorBoundaryFallback() {
+  const t = useTranslations('ErrorBoundary');
+
+  return (
+    <div className="error-boundary" role="alert">
+      <h2 className="error-boundary__title">{t('title')}</h2>
+      <p className="error-boundary__text">{t('text')}</p>
+    </div>
+  );
+}
 
 export class AppErrorBoundary extends Component<
   AppErrorBoundaryProps,
@@ -26,15 +38,9 @@ export class AppErrorBoundary extends Component<
 
   render() {
     if (this.state.hasError) {
-      return (
-        <div className="error-boundary" role="alert">
-          <h2 className="error-boundary__title">Something went wrong</h2>
-          <p className="error-boundary__text">
-            The UI hit an unexpected error. Reload the page to continue.
-          </p>
-        </div>
-      );
+      return <ErrorBoundaryFallback />;
     }
+
     return this.props.children;
   }
 }

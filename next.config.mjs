@@ -1,3 +1,5 @@
+import createNextIntlPlugin from 'next-intl/plugin';
+
 /** @type {import('next').NextConfig} */
 function normalizeBasePath(value) {
   if (!value || value.trim() === '') {
@@ -18,4 +20,6 @@ const nextConfig = {
   ...(basePath ? { basePath } : {}),
 };
 
-export default nextConfig;
+const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
+
+export default withNextIntl(nextConfig);

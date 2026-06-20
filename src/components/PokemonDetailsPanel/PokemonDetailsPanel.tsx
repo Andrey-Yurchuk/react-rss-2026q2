@@ -1,14 +1,17 @@
 import { useQueryClient } from '@tanstack/react-query';
+import { useTranslations } from 'next-intl';
 import { useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  getPokemonDetailsErrorMessage,
   pokemonQueryKeys,
   usePokemonDetailsQuery,
 } from '../../queries/pokemonQueries.ts';
+import { ApiRequestError } from '../../services/pokemonApi.ts';
 import { parsePageParam } from '../../utils/urlParams';
 
 export function PokemonDetailsPanel() {
+  const t = useTranslations('DetailsPanel');
+  const tErrors = useTranslations('Errors');
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -21,12 +24,13 @@ export function PokemonDetailsPanel() {
 
   const invalidId = detailsId === null;
   const loading = !invalidId && detailsQuery.isLoading;
-  const refreshing =
-    !invalidId && detailsQuery.isFetching && !loading;
+  const refreshing = !invalidId && detailsQuery.isFetching && !loading;
   const error = invalidId
-    ? 'Pokemon details were not found.'
+    ? t('notFound')
     : detailsQuery.isError
-      ? getPokemonDetailsErrorMessage(detailsQuery.error)
+      ? detailsQuery.error instanceof ApiRequestError
+        ? detailsQuery.error.message
+        : tErrors('detailsGeneric')
       : null;
   const details = detailsQuery.data;
 
@@ -47,28 +51,28 @@ export function PokemonDetailsPanel() {
   }, [queryClient, detailsId, detailsQuery]);
 
   return (
-    <aside className="details-panel" aria-label="Pokemon details">
+    <aside className="details-panel" aria-label={t('label')}>
       <div className="details-panel__header">
-        <h2 className="details-panel__title">Pokemon details</h2>
+        <h2 className="details-panel__title">{t('title')}</h2>
         <div className="details-panel__actions">
           <button
             type="button"
             className="details-panel__close"
             onClick={handleClose}
           >
-            Close
+            {t('close')}
           </button>
           {detailsId !== null ? (
             <button
               type="button"
               className="details-panel__refresh"
-              aria-label="Refresh details"
+              aria-label={t('refreshAria')}
               onClick={() => {
                 handleRefreshDetails().catch(() => undefined);
               }}
               disabled={detailsQuery.isFetching}
             >
-              Refresh details
+              {t('refresh')}
             </button>
           ) : null}
         </div>
@@ -77,13 +81,13 @@ export function PokemonDetailsPanel() {
       {loading ? (
         <div className="loading" aria-live="polite" aria-busy="true">
           <div className="loading__spinner" />
-          <span className="loading__label">Loading details…</span>
+          <span className="loading__label">{t('loading')}</span>
         </div>
       ) : null}
 
       {refreshing ? (
         <p className="details-panel__refreshing" aria-live="polite">
-          Refreshing details…
+          {t('refreshing')}
         </p>
       ) : null}
 
@@ -95,7 +99,7 @@ export function PokemonDetailsPanel() {
 
       {!loading && !error && details ? (
         <div className="details-panel__content">
-          <p className="details-panel__id">Pokedex #{details.id}</p>
+          <p className="details-panel__id">{t('pokedexId', { id: details.id })}</p>
           <h3 className="details-panel__name">{details.name}</h3>
           <p className="details-panel__description">{details.description}</p>
         </div>

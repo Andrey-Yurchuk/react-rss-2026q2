@@ -8,7 +8,41 @@
 .app-shell__topbar {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
   padding: 0.75rem 1.25rem 0;
+}
+
+.language-switcher {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+}
+
+.language-switcher__button {
+  padding: 0.3rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.language-switcher__button[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+}
+
+.language-switcher__button:hover:not([aria-pressed='true']) {
+  color: var(--text-h);
+  border-color: var(--accent-border);
 }
 
 .theme-toggle {

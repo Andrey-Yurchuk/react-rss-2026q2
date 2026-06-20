@@ -10,6 +10,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactElement } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { createTestQueryClient } from './queryClient.ts';
+import { IntlTestProvider } from './intl.tsx';
 
 export type RenderWithRouterOptions = {
   route?: string;
@@ -27,7 +28,9 @@ export function renderUi(
   { queryClient = createTestQueryClient() }: RenderUiOptions = {}
 ) {
   return render(
-    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+    <IntlTestProvider>
+      <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+    </IntlTestProvider>
   );
 }
 
@@ -39,9 +42,11 @@ export function renderWithRouter(
   }: RenderWithRouterOptions = {}
 ) {
   return render(
-    <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={[route]}>{ui}</MemoryRouter>
-    </QueryClientProvider>
+    <IntlTestProvider>
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={[route]}>{ui}</MemoryRouter>
+      </QueryClientProvider>
+    </IntlTestProvider>
   );
 }
 

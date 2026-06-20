@@ -1,24 +1,31 @@
 import type { Metadata } from 'next';
+import { getLocale } from 'next-intl/server';
 import { AppProviders } from '../components/AppProviders/index.ts';
-import { AppShell } from '../components/AppShell/index.ts';
 import './App.css';
 import '../styles/index.css';
 
-export const metadata: Metadata = {
-  title: 'react-rss-2026q2',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const messages = (await import(`../../messages/${locale}.json`)).default as {
+    Metadata: { title: string };
+  };
 
-export default function RootLayout({
+  return {
+    title: messages.Metadata.title,
+  };
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
+
   return (
-    <html lang="en">
+    <html lang={locale}>
       <body>
-        <AppProviders>
-          <AppShell>{children}</AppShell>
-        </AppProviders>
+        <AppProviders>{children}</AppProviders>
       </body>
     </html>
   );

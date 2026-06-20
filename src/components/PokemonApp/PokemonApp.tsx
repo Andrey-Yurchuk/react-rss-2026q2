@@ -1,3 +1,5 @@
+import { useQueryClient } from '@tanstack/react-query';
+import { useTranslations } from 'next-intl';
 import {
   useCallback,
   useEffect,
@@ -6,16 +8,14 @@ import {
   useState,
   type MouseEvent,
 } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { Link, Outlet, useNavigate, useSearchParams } from 'react-router-dom';
 import { POKEMON_SEARCH_STORAGE_KEY } from '../../constants';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 import {
-  getPokemonListErrorMessage,
   pokemonQueryKeys,
   usePokemonResultsQuery,
 } from '../../queries/pokemonQueries.ts';
-import { totalPagesForCount } from '../../services/pokemonApi';
+import { ApiRequestError, totalPagesForCount } from '../../services/pokemonApi';
 import { useSelectedItemsStore } from '../../store/selectedItemsStore';
 import {
   buildSelectedItemsFilename,
@@ -31,6 +31,8 @@ import { SelectedItemsFlyout } from '../SelectedItemsFlyout/index.ts';
 import '../../app/App.css';
 
 export function PokemonApp() {
+  const t = useTranslations('PokemonApp');
+  const tErrors = useTranslations('Errors');
   const queryClient = useQueryClient();
   const { write: writeSearchToStorage } = useLocalStorage(POKEMON_SEARCH_STORAGE_KEY);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -70,7 +72,9 @@ export function PokemonApp() {
   const refreshing =
     submittedQuery !== null && resultsQuery.isFetching && !loading;
   const error = resultsQuery.isError
-    ? getPokemonListErrorMessage(resultsQuery.error)
+    ? resultsQuery.error instanceof ApiRequestError
+      ? resultsQuery.error.message
+      : tErrors('listGeneric')
     : null;
 
   useEffect(() => {
@@ -243,9 +247,9 @@ export function PokemonApp() {
     <div className={containerClassName}>
       <header className="pokemon-app__header">
         <div>
-          <h1 className="pokemon-app__title">Pokedex browser</h1>
+          <h1 className="pokemon-app__title">{t('title')}</h1>
           <p className="pokemon-app__subtitle">
-            Data from{' '}
+            {t('dataFrom')}{' '}
             <a
               className="pokemon-app__link"
               href="https://pokeapi.co/"
@@ -256,9 +260,9 @@ export function PokemonApp() {
             </a>
           </p>
         </div>
-        <nav className="pokemon-app__nav" aria-label="Application navigation">
+        <nav className="pokemon-app__nav" aria-label={t('navLabel')}>
           <Link className="pokemon-app__nav-link" to="/about">
-            About
+            {t('about')}
           </Link>
         </nav>
       </header>
@@ -266,10 +270,10 @@ export function PokemonApp() {
       <div className="pokemon-app__main-layout">
         <main
           className="pokemon-app__list-panel"
-          aria-label="Main Pokemon results panel"
+          aria-label={t('mainPanelLabel')}
           onClick={handleListPanelClick}
         >
-          <section className="pokemon-app__search-section" aria-label="Search">
+          <section className="pokemon-app__search-section" aria-label={t('searchSectionLabel')}>
             <Search
               value={searchInput}
               onChange={handleSearchInputChange}
@@ -280,20 +284,20 @@ export function PokemonApp() {
 
           <section
             className="pokemon-app__results-section"
-            aria-label="Search results"
+            aria-label={t('resultsSectionLabel')}
           >
             {submittedQuery !== null ? (
               <div className="pokemon-app__results-toolbar">
                 <button
                   type="button"
                   className="pokemon-app__refresh-button"
-                  aria-label="Refresh results"
+                  aria-label={t('refreshResultsAria')}
                   onClick={() => {
                     handleRefreshResults().catch(() => undefined);
                   }}
                   disabled={resultsQuery.isFetching}
                 >
-                  Refresh results
+                  {t('refreshResults')}
                 </button>
               </div>
             ) : null}
@@ -301,13 +305,13 @@ export function PokemonApp() {
             {loading && (
               <div className="loading" aria-live="polite" aria-busy="true">
                 <div className="loading__spinner" />
-                <span className="loading__label">Loading…</span>
+                <span className="loading__label">{t('loading')}</span>
               </div>
             )}
 
             {refreshing ? (
               <p className="pokemon-app__refreshing" aria-live="polite">
-                Refreshing…
+                {t('refreshing')}
               </p>
             ) : null}
 
@@ -346,7 +350,7 @@ export function PokemonApp() {
           className="pokemon-app__error-button"
           onClick={handleSimulateError}
         >
-          Trigger error (Error Boundary)
+          {t('triggerError')}
         </button>
       </div>
 

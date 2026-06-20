@@ -2,9 +2,11 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppProviders } from '../components/AppProviders/index.ts';
 import { AppShell } from '../components/AppShell/index.ts';
+import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../routes/AppRoutes';
+import { IntlTestProvider } from '../test-utils/intl.tsx';
 import { createConsoleErrorSpy } from '../test-utils/mocks';
-import { render, renderWithRouter, screen, within } from '../test-utils/render';
+import { render, screen, within } from '../test-utils/render';
 import App from './App';
 
 vi.mock('../services/pokemonApi', async (importOriginal) => {
@@ -17,17 +19,19 @@ vi.mock('../services/pokemonApi', async (importOriginal) => {
 
 function renderApp() {
   return render(
-    <AppProviders>
-      <AppShell>
-        <App />
-      </AppShell>
-    </AppProviders>
+    <IntlTestProvider>
+      <AppProviders>
+        <AppShell>
+          <App />
+        </AppShell>
+      </AppProviders>
+    </IntlTestProvider>
   );
 }
 
 describe('App', () => {
   beforeEach(() => {
-    window.history.replaceState({}, '', '/');
+    window.history.replaceState({}, '', '/en');
   });
 
   afterEach(() => {
@@ -85,7 +89,7 @@ describe('App', () => {
   });
 
   it('exposes the theme toggle on the 404 page for unknown routes', () => {
-    window.history.replaceState({}, '', '/totally-unknown-route');
+    window.history.replaceState({}, '', '/en/totally-unknown-route');
 
     renderApp();
 
@@ -132,7 +136,15 @@ describe('App', () => {
   });
 
   it('shows 404 page for unknown local routes', () => {
-    renderWithRouter(<AppRoutes />, { route: '/unknown-route' });
+    render(
+      <IntlTestProvider>
+        <AppProviders>
+          <MemoryRouter initialEntries={['/unknown-route']}>
+            <AppRoutes />
+          </MemoryRouter>
+        </AppProviders>
+      </IntlTestProvider>
+    );
 
     expect(
       screen.getByRole('heading', { name: /page not found/i })

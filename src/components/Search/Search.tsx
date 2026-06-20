@@ -1,4 +1,5 @@
 import { useEffect, type FormEvent } from 'react';
+import { useTranslations } from 'next-intl';
 import { POKEMON_SEARCH_STORAGE_KEY } from '../../constants';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 
@@ -15,6 +16,7 @@ export function Search({
   onSearch,
   onStorageHydrated,
 }: SearchProps) {
+  const t = useTranslations('Search');
   const { read } = useLocalStorage(POKEMON_SEARCH_STORAGE_KEY);
 
   useEffect(() => {
@@ -30,7 +32,7 @@ export function Search({
   return (
     <div className="search">
       <label className="search__label" htmlFor="pokemon-search-input">
-        Search Pokémon by exact name
+        {t('label')}
       </label>
       <form className="search__row" onSubmit={handleSubmit}>
         <input
@@ -40,10 +42,10 @@ export function Search({
           autoComplete="off"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="e.g. pikachu (leave empty for first page)"
+          placeholder={t('placeholder')}
         />
         <button className="search__button" type="submit">
-          Search
+          {t('button')}
         </button>
       </form>
     </div>
