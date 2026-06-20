@@ -1,0 +1,91 @@
+{
+  "Metadata": {
+    "title": "react-rss-2026q2"
+  },
+  "Theme": {
+    "label": "Theme",
+    "light": "Light",
+    "dark": "Dark"
+  },
+  "Language": {
+    "label": "Language",
+    "en": "EN",
+    "ru": "RU"
+  },
+  "PokemonApp": {
+    "title": "Pokedex browser",
+    "dataFrom": "Data from",
+    "about": "About",
+    "navLabel": "Application navigation",
+    "mainPanelLabel": "Main Pokemon results panel",
+    "searchSectionLabel": "Search",
+    "resultsSectionLabel": "Search results",
+    "refreshResults": "Refresh results",
+    "refreshResultsAria": "Refresh results",
+    "loading": "Loading…",
+    "refreshing": "Refreshing…",
+    "triggerError": "Trigger error (Error Boundary)"
+  },
+  "Search": {
+    "label": "Search Pokémon by exact name",
+    "placeholder": "e.g. pikachu (leave empty for first page)",
+    "button": "Search"
+  },
+  "Pagination": {
+    "label": "Results pagination",
+    "previous": "Previous",
+    "next": "Next",
+    "status": "Page {page} of {totalPages}"
+  },
+  "CardList": {
+    "empty": "No results to show."
+  },
+  "Card": {
+    "viewDetails": "View details",
+    "viewDetailsFor": "View details for {name}",
+    "select": "Select {name}"
+  },
+  "SelectedFlyout": {
+    "label": "Selected Pokemon",
+    "count": "{count, plural, one {# item selected} other {# items selected}}",
+    "unselectAll": "Unselect all",
+    "download": "Download",
+    "downloading": "Downloading…",
+    "downloadError": "Unable to download selected items."
+  },
+  "DetailsPanel": {
+    "label": "Pokemon details",
+    "title": "Pokemon details",
+    "close": "Close",
+    "refresh": "Refresh details",
+    "refreshAria": "Refresh details",
+    "loading": "Loading details…",
+    "refreshing": "Refreshing details…",
+    "notFound": "Pokemon details were not found.",
+    "pokedexId": "Pokedex #{id}"
+  },
+  "Errors": {
+    "listGeneric": "Unable to reach the Pokemon API. Check your connection.",
+    "detailsGeneric": "Unable to load Pokemon details. Check your connection."
+  },
+  "AboutPage": {
+    "eyebrow": "About this app",
+    "title": "Pokedex browser",
+    "lead": "A React learning project where you can search Pokemon, open a detailed Pokemon card, and browse results with pagination",
+    "authorTitle": "Author",
+    "authorLead": "Built by",
+    "courseTitle": "Course",
+    "courseLead": "This project is part of the",
+    "backHome": "Back to Pokemon search"
+  },
+  "NotFoundPage": {
+    "eyebrow": "404 error",
+    "title": "Page not found",
+    "lead": "The page you are looking for does not exist or has been moved",
+    "backHome": "Back to Pokemon search"
+  },
+  "ErrorBoundary": {
+    "title": "Something went wrong",
+    "text": "The UI hit an unexpected error. Reload the page to continue."
+  }
+}

@@ -2,9 +2,7 @@ import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
 import {
   ApiRequestError,
   loadPokemonById,
-  loadPokemonResults,
   type PokemonCardModel,
-  type PokemonListPageResult,
 } from '../services/pokemonApi.ts';
 
 const POKEMON_LIST_GENERIC_ERROR =
@@ -19,11 +17,6 @@ export const pokemonQueryKeys = {
   details: (id: number) =>
     [...pokemonQueryKeys.all, 'details', id] as const,
 };
-
-type UsePokemonResultsQueryOptions = Omit<
-  UseQueryOptions<PokemonListPageResult, Error>,
-  'queryKey' | 'queryFn'
->;
 
 type UsePokemonDetailsQueryOptions = Omit<
   UseQueryOptions<PokemonCardModel, Error>,
@@ -44,18 +37,6 @@ export function getPokemonDetailsErrorMessage(error: unknown): string {
   }
 
   return POKEMON_DETAILS_GENERIC_ERROR;
-}
-
-export function usePokemonResultsQuery(
-  normalizedQuery: string,
-  page: number,
-  options?: UsePokemonResultsQueryOptions
-) {
-  return useQuery({
-    ...options,
-    queryKey: pokemonQueryKeys.results(normalizedQuery, page),
-    queryFn: () => loadPokemonResults(normalizedQuery, page),
-  });
 }
 
 export function usePokemonDetailsQuery(

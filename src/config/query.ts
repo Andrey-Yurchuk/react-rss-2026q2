@@ -15,5 +15,5 @@ function parsePositiveMs(value: string | undefined): number | null {
 }
 
 export const QUERY_CACHE_TTL_MS =
-  parsePositiveMs(import.meta.env.VITE_QUERY_CACHE_TTL_MS) ??
+  parsePositiveMs(process.env.NEXT_PUBLIC_QUERY_CACHE_TTL_MS) ??
   DEFAULT_QUERY_CACHE_TTL_MS;

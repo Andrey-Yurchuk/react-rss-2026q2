@@ -1,8 +1,9 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
-  useState,
+  useSyncExternalStore,
   type ReactNode,
 } from 'react';
 import { POKEMON_THEME_STORAGE_KEY } from '../constants';
@@ -13,6 +14,9 @@ import {
 } from './themeContextValue.ts';
 
 const PREFERS_DARK_QUERY = '(prefers-color-scheme: dark)';
+
+let themeState: Theme = 'light';
+const themeListeners = new Set<() => void>();
 
 function isTheme(value: unknown): value is Theme {
   return value === 'light' || value === 'dark';
@@ -57,15 +61,53 @@ function detectInitialTheme(): Theme {
   return window.matchMedia(PREFERS_DARK_QUERY).matches ? 'dark' : 'light';
 }
 
+function resolveThemeFromBrowser(): Theme {
+  return readStoredTheme() ?? detectInitialTheme();
+}
+
+function subscribeToTheme(listener: () => void) {
+  themeListeners.add(listener);
+  return () => {
+    themeListeners.delete(listener);
+  };
+}
+
+function getThemeSnapshot(): Theme {
+  return themeState;
+}
+
+function publishTheme(next: Theme) {
+  if (themeState === next) {
+    return;
+  }
+  themeState = next;
+  themeListeners.forEach((listener) => listener());
+}
+
+export function resetThemeStoreForTests(theme: Theme = 'light') {
+  themeState = theme;
+  themeListeners.forEach((listener) => listener());
+}
+
 type ThemeProviderProps = {
   children: ReactNode;
   initialTheme?: Theme;
 };
 
 export function ThemeProvider({ children, initialTheme }: ThemeProviderProps) {
-  const [theme, setThemeState] = useState<Theme>(
-    () => initialTheme ?? readStoredTheme() ?? detectInitialTheme()
+  const serverFallback = initialTheme ?? 'light';
+
+  const theme = useSyncExternalStore(
+    subscribeToTheme,
+    getThemeSnapshot,
+    () => serverFallback
   );
+
+  useLayoutEffect(() => {
+    publishTheme(
+      initialTheme === undefined ? resolveThemeFromBrowser() : initialTheme
+    );
+  }, [initialTheme]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -76,11 +118,11 @@ export function ThemeProvider({ children, initialTheme }: ThemeProviderProps) {
   }, [theme]);
 
   const setTheme = useCallback((next: Theme) => {
-    setThemeState(next);
+    publishTheme(next);
   }, []);
 
   const toggleTheme = useCallback(() => {
-    setThemeState((current) => (current === 'light' ? 'dark' : 'light'));
+    publishTheme(getThemeSnapshot() === 'light' ? 'dark' : 'light');
   }, []);
 
   const value = useMemo<ThemeContextValue>(

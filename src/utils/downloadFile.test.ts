@@ -46,11 +46,10 @@ describe('downloadBlobAsFile', () => {
   });
 
   it('creates a Blob with the provided content and mime type', async () => {
-    downloadBlobAsFile(
-      'id,name\r\n1,pikachu',
-      '1_items.csv',
-      'text/csv;charset=utf-8'
-    );
+    const content = new Blob(['id,name\r\n1,pikachu'], {
+      type: 'text/csv;charset=utf-8',
+    });
+    downloadBlobAsFile(content, '1_items.csv');
 
     expect(createObjectURLSpy).toHaveBeenCalledTimes(1);
     const blob = createObjectURLSpy.mock.calls[0][0] as Blob;
@@ -60,7 +59,10 @@ describe('downloadBlobAsFile', () => {
   });
 
   it('configures temporary anchor with download filename and triggers a click', () => {
-    downloadBlobAsFile('csv-content', '5_items.csv', 'text/csv;charset=utf-8');
+    downloadBlobAsFile(
+      new Blob(['csv-content'], { type: 'text/csv;charset=utf-8' }),
+      '5_items.csv'
+    );
 
     expect(createElementSpy).toHaveBeenCalledWith('a');
     expect(createdAnchors).toHaveLength(1);
@@ -71,7 +73,10 @@ describe('downloadBlobAsFile', () => {
   });
 
   it('removes the temporary anchor and revokes the object URL after click', () => {
-    downloadBlobAsFile('csv-content', '5_items.csv', 'text/csv;charset=utf-8');
+    downloadBlobAsFile(
+      new Blob(['csv-content'], { type: 'text/csv;charset=utf-8' }),
+      '5_items.csv'
+    );
 
     expect(createdAnchors).toHaveLength(1);
     expect(document.body.contains(createdAnchors[0])).toBe(false);

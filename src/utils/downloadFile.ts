@@ -1,10 +1,8 @@
 export function downloadBlobAsFile(
-  content: string,
+  content: Blob,
   filename: string,
-  mimeType: string
 ): void {
-  const blob = new Blob([content], { type: mimeType });
-  const url = URL.createObjectURL(blob);
+  const url = URL.createObjectURL(content);
   const anchor = document.createElement('a');
   anchor.href = url;
   anchor.download = filename;

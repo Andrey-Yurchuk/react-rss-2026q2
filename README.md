@@ -2,33 +2,56 @@
 
 ## RS School React course project
 
-Vite + React + TypeScript Pokedex browser for the RS School **API querying in React** task.
+Next.js App Router Pokedex browser (branch **`nextjs-ssr`**).
 
-**PokeAPI** powers paginated search and a master–detail split view. **TanStack Query** handles API fetching, caching, and cache TTL for server state. **Zustand** stores user-selected Pokemon and survives page changes and SPA navigation. A sticky **flyout** shows the selected count with **Unselect all** and **Download CSV** actions (native `Blob` + `URL.createObjectURL`, filename like `N_items.csv`). **React Context API** controls light/dark theme via a top-level toggle, with the choice persisted to `localStorage`.
+**Live demo:** https://cheerful-eclair-bec58d.netlify.app/en?page=1
+
+**PokeAPI** — paginated search, server-rendered results, details panel, selected items CSV download, i18n (`en` / `ru`), theme toggle.
 
 ### Environment
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `VITE_QUERY_CACHE_TTL_MS` | Query cache TTL in milliseconds (`staleTime` and `gcTime` for TanStack Query) | `300000` (5 minutes) if unset or invalid |
+| `NEXT_PUBLIC_QUERY_CACHE_TTL_MS` | TanStack Query cache TTL (ms) | `300000` |
+| `NEXT_PUBLIC_BASE_PATH` | Base path for subpath deploy (e.g. GitHub Pages) | empty |
 
-### Routes
+### Deployment
 
-- `/` — search and results (`?page=1`, `?page=2&details=25`)
-- `/about` — author and course links
-- unknown paths — 404 page (React Router catch-all)
+This app needs a **Next.js server runtime** — it is not a static SPA.
+
+| Requirement | Implementation |
+|-------------|----------------|
+| SSR home results | `src/app/[locale]/page.tsx` fetches on each request |
+| Server action search | `submitPokemonSearch` in `src/app/[locale]/actions.ts` |
+| CSV download API | `POST /api/selected-pokemon.csv` route handler |
+| Locale routing | `src/middleware.ts` (next-intl) |
+
+**GitHub Pages is not suitable** for the full RS School Next.js task. Pages hosts static files only; a static export build fails:
+
+```text
+Server Actions are not supported with static export.
+```
+
+**Production deploy:** [Netlify](https://cheerful-eclair-bec58d.netlify.app/en?page=1) (`netlify.toml`, branch `nextjs-ssr`).
+
+**Self-host or other Next.js runtime** (e.g. [Vercel](https://vercel.com)):
+
+```bash
+npm ci
+npm run build
+npm run start
+```
+
+Set `NEXT_PUBLIC_BASE_PATH` only when the app is served from a subpath (not needed on Vercel project root).
+
+`NEXT_STATIC_EXPORT=1` may be used locally to verify export limits; it breaks server actions, API routes, and runtime SSR.
 
 ### Scripts
 
 | Command | Description |
 |---------|-------------|
-| `npm run dev` | Local dev server |
+| `npm run dev` | Dev server |
 | `npm run build` | Production build |
-| `npm run preview` | Preview production build |
-| `npm run test` | Unit tests (Vitest) |
-| `npm run test:coverage` | Tests with coverage (statements ≥ 80%) |
+| `npm run start` | Production server |
+| `npm run test` | Unit tests |
 | `npm run lint` | ESLint |
-
-Tooling: **ESLint**, **Prettier**, **Husky** (pre-commit: `lint`, pre-push: `test`).
-
-Active branch for this task: **`api-queries`**.

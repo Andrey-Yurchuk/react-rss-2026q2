@@ -9,7 +9,7 @@ describe('SelectedItemsFlyout', () => {
       <SelectedItemsFlyout
         selectedCount={0}
         onUnselectAll={vi.fn()}
-        onDownload={vi.fn()}
+        onDownload={vi.fn().mockResolvedValue(undefined)}
       />
     );
 
@@ -21,7 +21,7 @@ describe('SelectedItemsFlyout', () => {
       <SelectedItemsFlyout
         selectedCount={3}
         onUnselectAll={vi.fn()}
-        onDownload={vi.fn()}
+        onDownload={vi.fn().mockResolvedValue(undefined)}
       />
     );
 
@@ -39,7 +39,7 @@ describe('SelectedItemsFlyout', () => {
       <SelectedItemsFlyout
         selectedCount={1}
         onUnselectAll={vi.fn()}
-        onDownload={vi.fn()}
+        onDownload={vi.fn().mockResolvedValue(undefined)}
       />
     );
 
@@ -49,7 +49,7 @@ describe('SelectedItemsFlyout', () => {
   it('invokes onUnselectAll when the unselect button is clicked', async () => {
     const user = userEvent.setup();
     const onUnselectAll = vi.fn();
-    const onDownload = vi.fn();
+    const onDownload = vi.fn().mockResolvedValue(undefined);
 
     render(
       <SelectedItemsFlyout
@@ -68,7 +68,7 @@ describe('SelectedItemsFlyout', () => {
   it('invokes onDownload when the download button is clicked', async () => {
     const user = userEvent.setup();
     const onUnselectAll = vi.fn();
-    const onDownload = vi.fn();
+    const onDownload = vi.fn().mockResolvedValue(undefined);
 
     render(
       <SelectedItemsFlyout
@@ -89,12 +89,27 @@ describe('SelectedItemsFlyout', () => {
       <SelectedItemsFlyout
         selectedCount={1}
         onUnselectAll={vi.fn()}
-        onDownload={vi.fn()}
+        onDownload={vi.fn().mockResolvedValue(undefined)}
       />
     );
 
     expect(
       screen.getByRole('region', { name: /selected pokemon/i })
     ).toBeInTheDocument();
+  });
+
+  it('shows download error message and downloading state', () => {
+    render(
+      <SelectedItemsFlyout
+        selectedCount={1}
+        onUnselectAll={vi.fn()}
+        onDownload={vi.fn().mockResolvedValue(undefined)}
+        isDownloading
+        downloadError="Download failed."
+      />
+    );
+
+    expect(screen.getByRole('button', { name: /downloading/i })).toBeDisabled();
+    expect(screen.getByRole('alert')).toHaveTextContent('Download failed.');
   });
 });

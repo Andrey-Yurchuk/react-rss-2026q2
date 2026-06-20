@@ -1,7 +1,8 @@
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { useSelectedItemsStore } from '../../store/selectedItemsStore';
 import { render, screen } from '../../test-utils/render';
-import { CardList } from './CardList';
+import { CardListClient } from './CardListClient';
 
 const pikachu = {
   id: 25,
@@ -15,9 +16,21 @@ const bulbasaur = {
   description: 'Types: grass, poison. Height: 7, weight: 69.',
 };
 
-describe('CardList', () => {
+const defaultListProps = {
+  page: 1,
+  query: '',
+  detailsId: null,
+};
+
+beforeEach(() => {
+  useSelectedItemsStore.setState({ selectedItems: [] });
+});
+
+describe('CardListClient', () => {
   it('renders all cards when items are provided', () => {
-    render(<CardList items={[pikachu, bulbasaur]} />);
+    render(
+      <CardListClient items={[pikachu, bulbasaur]} {...defaultListProps} />
+    );
 
     expect(screen.getByRole('heading', { name: 'pikachu' })).toBeInTheDocument();
     expect(
@@ -27,18 +40,25 @@ describe('CardList', () => {
   });
 
   it('shows empty state when items are empty', () => {
-    render(<CardList items={[]} />);
+    render(<CardListClient items={[]} {...defaultListProps} />);
 
     expect(screen.getByText('No results to show.')).toBeInTheDocument();
   });
 
   it('passes checked selection state to the matching card', () => {
+    useSelectedItemsStore.setState({
+      selectedItems: [
+        {
+          id: 25,
+          name: 'pikachu',
+          description: pikachu.description,
+          detailsUrl: 'https://pokeapi.co/api/v2/pokemon/25',
+        },
+      ],
+    });
+
     render(
-      <CardList
-        items={[pikachu, bulbasaur]}
-        selectedIds={new Set([25])}
-        onSelectionToggle={vi.fn()}
-      />
+      <CardListClient items={[pikachu, bulbasaur]} {...defaultListProps} />
     );
 
     expect(
@@ -49,22 +69,19 @@ describe('CardList', () => {
     ).not.toBeChecked();
   });
 
-  it('invokes onSelectionToggle with the item whose checkbox was toggled', async () => {
+  it('invokes Zustand selection when a checkbox is toggled', async () => {
     const user = userEvent.setup();
-    const onSelectionToggle = vi.fn();
 
     render(
-      <CardList
-        items={[pikachu, bulbasaur]}
-        onSelectionToggle={onSelectionToggle}
-      />
+      <CardListClient items={[pikachu, bulbasaur]} {...defaultListProps} />
     );
 
     await user.click(
       screen.getByRole('checkbox', { name: /select bulbasaur/i })
     );
 
-    expect(onSelectionToggle).toHaveBeenCalledTimes(1);
-    expect(onSelectionToggle).toHaveBeenCalledWith(bulbasaur);
+    expect(useSelectedItemsStore.getState().selectedItems.map((item) => item.id)).toEqual([
+      1,
+    ]);
   });
 });

@@ -1,16 +1,20 @@
+'use client';
+
+import { useTranslations } from 'next-intl';
 import { useTheme } from '../../context/themeContextValue.ts';
 import type { Theme } from '../../context/themeContextValue.ts';
 
-const OPTIONS: ReadonlyArray<{ value: Theme; label: string }> = [
-  { value: 'light', label: 'Light' },
-  { value: 'dark', label: 'Dark' },
+const OPTIONS: ReadonlyArray<{ value: Theme; labelKey: 'light' | 'dark' }> = [
+  { value: 'light', labelKey: 'light' },
+  { value: 'dark', labelKey: 'dark' },
 ];
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
+  const t = useTranslations('Theme');
 
   return (
-    <div className="theme-toggle" role="group" aria-label="Theme">
+    <div className="theme-toggle" role="group" aria-label={t('label')}>
       {OPTIONS.map((option) => {
         const isActive = theme === option.value;
         return (
@@ -21,7 +25,7 @@ export function ThemeToggle() {
             aria-pressed={isActive}
             onClick={() => setTheme(option.value)}
           >
-            {option.label}
+            {t(option.labelKey)}
           </button>
         );
       })}

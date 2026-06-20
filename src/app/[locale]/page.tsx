@@ -1,0 +1,104 @@
+import { setRequestLocale } from 'next-intl/server';
+import { submitPokemonSearch } from './actions.ts';
+import { CardList } from '../../components/CardList/index.ts';
+import { PaginationNav } from '../../components/PaginationNav/index.ts';
+import { PokemonDetailsPanel } from '../../components/PokemonDetailsPanel/index.ts';
+import { PokemonHomeView } from '../../components/PokemonHomeView/index.ts';
+import { redirect } from '../../i18n/navigation.ts';
+import { getPokemonListErrorMessage } from '../../queries/pokemonQueries.ts';
+import {
+  loadPokemonResults,
+  totalPagesForCount,
+} from '../../services/pokemonApi.ts';
+import {
+  buildHomeSearchHref,
+  hasPageSearchParam,
+  parseHomeSearchParams,
+  type HomeSearchParamsInput,
+} from '../../utils/homeSearchParams.ts';
+
+type HomePageProps = {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<HomeSearchParamsInput>;
+};
+
+export default async function HomePage({
+  params,
+  searchParams,
+}: HomePageProps) {
+  const { locale } = await params;
+  const resolvedSearchParams = await searchParams;
+  setRequestLocale(locale);
+  const searchAction = submitPokemonSearch.bind(null, locale);
+
+  const normalizedParams = parseHomeSearchParams(resolvedSearchParams);
+
+  if (!hasPageSearchParam(resolvedSearchParams)) {
+    redirect({
+      href: buildHomeSearchHref(normalizedParams),
+      locale,
+    });
+  }
+
+  let items: Awaited<ReturnType<typeof loadPokemonResults>>['items'] = [];
+  let totalCount = 0;
+  let errorMessage: string | null = null;
+
+  try {
+    const result = await loadPokemonResults(
+      normalizedParams.query,
+      normalizedParams.page
+    );
+    items = result.items;
+    totalCount = result.totalCount;
+  } catch (error) {
+    errorMessage = getPokemonListErrorMessage(error);
+  }
+
+  const detailsPanel =
+    normalizedParams.detailsId !== null ? (
+      <section className="pokemon-app__details-panel">
+        <PokemonDetailsPanel
+          detailsId={normalizedParams.detailsId}
+          page={normalizedParams.page}
+          query={normalizedParams.query}
+        />
+      </section>
+    ) : null;
+
+  const showPagination = errorMessage === null && items.length > 0;
+  const totalPages = totalPagesForCount(totalCount);
+
+  const resultsSection = errorMessage ? (
+    <p className="results__error" role="alert">
+      {errorMessage}
+    </p>
+  ) : (
+    <>
+      <CardList
+        items={items}
+        page={normalizedParams.page}
+        query={normalizedParams.query}
+        detailsId={normalizedParams.detailsId}
+      />
+      {showPagination ? (
+        <PaginationNav
+          page={normalizedParams.page}
+          totalPages={totalPages}
+          query={normalizedParams.query}
+          detailsId={normalizedParams.detailsId}
+        />
+      ) : null}
+    </>
+  );
+
+  return (
+    <PokemonHomeView
+      query={normalizedParams.query}
+      detailsId={normalizedParams.detailsId}
+      resultsSection={resultsSection}
+      searchAction={searchAction}
+      detailsPanel={detailsPanel}
+    />
+  );
+}

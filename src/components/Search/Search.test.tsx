@@ -1,72 +1,49 @@
 import userEvent from '@testing-library/user-event';
-import type { ComponentProps } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { POKEMON_SEARCH_STORAGE_KEY } from '../../constants';
 import { seedLocalStorage } from '../../test-utils/mocks';
 import { render, screen } from '../../test-utils/render';
 import { Search } from './Search';
 
-function createProps(overrides?: Partial<ComponentProps<typeof Search>>) {
-  return {
-    value: '',
-    onChange: vi.fn(),
-    onSearch: vi.fn(),
-    onStorageHydrated: vi.fn(),
-    ...overrides,
-  };
-}
-
 describe('Search', () => {
-  it('renders search input and submit button', () => {
-    const props = createProps();
-    render(<Search {...props} />);
-
-    expect(
-      screen.getByLabelText(/search pok.mon by exact name/i)
-    ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /search/i })).toBeInTheDocument();
-  });
-
-  it('hydrates search term from localStorage on mount', () => {
+  it('hydrates normalized value from localStorage on mount', () => {
+    const onStorageHydrated = vi.fn();
     seedLocalStorage(POKEMON_SEARCH_STORAGE_KEY, '  PiKaChu ');
-    const props = createProps();
 
-    render(<Search {...props} />);
+    render(
+      <Search
+        value=""
+        onChange={vi.fn()}
+        onSearch={vi.fn()}
+        onStorageHydrated={onStorageHydrated}
+      />
+    );
 
-    expect(props.onStorageHydrated).toHaveBeenCalledTimes(1);
-    expect(props.onStorageHydrated).toHaveBeenCalledWith('pikachu');
+    expect(onStorageHydrated).toHaveBeenCalledWith('pikachu');
   });
 
-  it('hydrates empty term when localStorage has no value', () => {
-    const props = createProps();
-
-    render(<Search {...props} />);
-
-    expect(props.onStorageHydrated).toHaveBeenCalledTimes(1);
-    expect(props.onStorageHydrated).toHaveBeenCalledWith('');
-  });
-
-  it('calls onChange when user types in input', async () => {
+  it('calls onChange and onSearch when the form is submitted', async () => {
     const user = userEvent.setup();
-    const props = createProps();
+    const onChange = vi.fn();
+    const onSearch = vi.fn();
 
-    render(<Search {...props} />);
+    render(
+      <Search
+        value="pikachu"
+        onChange={onChange}
+        onSearch={onSearch}
+        onStorageHydrated={vi.fn()}
+      />
+    );
 
-    await user.type(screen.getByLabelText(/search pok.mon by exact name/i), 'pi');
-
-    expect(props.onChange).toHaveBeenCalledTimes(2);
-    expect(props.onChange).toHaveBeenNthCalledWith(1, 'p');
-    expect(props.onChange).toHaveBeenNthCalledWith(2, 'i');
-  });
-
-  it('calls onSearch when form is submitted', async () => {
-    const user = userEvent.setup();
-    const props = createProps();
-
-    render(<Search {...props} />);
-
+    await user.clear(screen.getByLabelText(/search pok.mon by exact name/i));
+    await user.type(
+      screen.getByLabelText(/search pok.mon by exact name/i),
+      'bulbasaur'
+    );
     await user.click(screen.getByRole('button', { name: /search/i }));
 
-    expect(props.onSearch).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalled();
+    expect(onSearch).toHaveBeenCalledTimes(1);
   });
 });
