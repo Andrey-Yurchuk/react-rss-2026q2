@@ -30,14 +30,39 @@ vi.mock('./i18n/navigation.ts', () => ({
       children
     ),
   useRouter: () => ({
-    replace: (href: string) => applyNavigationHref(href),
+    replace: (href: string, options?: { locale?: string }) => {
+      if (options?.locale) {
+        const normalizedPath = href.startsWith('/') ? href : `/${href}`;
+        const localePath =
+          normalizedPath === '/'
+            ? `/${options.locale}`
+            : `/${options.locale}${normalizedPath}`;
+        const query = getNavigationSnapshot().searchParams.toString();
+        applyNavigationHref(query ? `${localePath}?${query}` : localePath);
+        return;
+      }
+
+      applyNavigationHref(href);
+    },
     push: (href: string) => applyNavigationHref(href),
     refresh: () => triggerRefreshHandler(),
     back: vi.fn(),
     forward: vi.fn(),
     prefetch: vi.fn(),
   }),
-  usePathname: () => getNavigationSnapshot().pathname,
+  usePathname: () => {
+    const { pathname } = getNavigationSnapshot();
+
+    if (pathname === '/ru' || pathname.startsWith('/ru/')) {
+      return pathname.slice(3) || '/';
+    }
+
+    if (pathname === '/en' || pathname.startsWith('/en/')) {
+      return pathname.slice(3) || '/';
+    }
+
+    return pathname;
+  },
   redirect: vi.fn(),
   getPathname: () => getNavigationSnapshot().pathname,
 }));

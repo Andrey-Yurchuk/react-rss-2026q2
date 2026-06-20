@@ -8,7 +8,7 @@ import { useSelectedItemsStore } from '../../store/selectedItemsStore';
 import { seedLocalStorage } from '../../test-utils/mocks';
 import { TestNavigationProbe } from '../TestNavigationProbe/index.ts';
 import {
-  renderWithRouter,
+  renderWithNavigation,
   screen,
   waitFor,
 } from '../../test-utils/render';
@@ -69,12 +69,12 @@ beforeEach(() => {
 
 function renderPokemonHome(href = '/?page=1') {
   resetMockNavigation(href);
-  return renderWithRouter(<PokemonHomeTestHarness />, { href });
+  return renderWithNavigation(<PokemonHomeTestHarness />, { href });
 }
 
 function renderPokemonHomeWithAboutSwitch(href = '/?page=1') {
   resetMockNavigation(href);
-  return renderWithRouter(
+  return renderWithNavigation(
     <>
       <TestHomeAboutSwitch />
       <TestNavigationProbe />

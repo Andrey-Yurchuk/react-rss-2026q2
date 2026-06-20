@@ -94,6 +94,17 @@ describe('App shell', () => {
     expect(within(group).getByRole('button', { name: /dark/i })).toBeInTheDocument();
   });
 
+  it('renders the language switcher in the app shell', () => {
+    renderHome();
+
+    const group = screen.getByRole('group', { name: /language/i });
+    expect(within(group).getByRole('button', { name: 'EN' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
+    expect(within(group).getByRole('button', { name: 'RU' })).toBeInTheDocument();
+  });
+
   it('switches the document theme when the user toggles dark mode', async () => {
     const user = userEvent.setup();
     renderHome();

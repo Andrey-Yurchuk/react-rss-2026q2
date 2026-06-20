@@ -58,4 +58,3 @@ export {
   fireEvent,
 };
 export { renderUi as render };
-export { renderWithNavigation as renderWithRouter };
