@@ -57,6 +57,20 @@ describe('parseHomeSearchParams', () => {
       detailsId: 25,
     });
   });
+
+  it('uses the first value when a param is an array', () => {
+    expect(
+      parseHomeSearchParams({
+        page: ['3', '4'],
+        query: ['  Eevee ', 'ignored'],
+        details: ['133', '134'],
+      })
+    ).toEqual({
+      page: 3,
+      query: 'eevee',
+      detailsId: 133,
+    });
+  });
 });
 
 describe('hasPageSearchParam', () => {

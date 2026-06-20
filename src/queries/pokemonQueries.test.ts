@@ -1,10 +1,26 @@
+import { QueryClientProvider } from '@tanstack/react-query';
+import { renderHook, waitFor } from '@testing-library/react';
+import { createElement, type ReactNode } from 'react';
 import { describe, expect, it } from 'vitest';
+import { createTestQueryClient } from '../test-utils/queryClient.ts';
+import { mockFetchJsonSequence } from '../test-utils/mocks.ts';
 import { ApiRequestError } from '../services/pokemonApi.ts';
 import {
   getPokemonDetailsErrorMessage,
   getPokemonListErrorMessage,
   pokemonQueryKeys,
+  usePokemonDetailsQuery,
 } from './pokemonQueries.ts';
+
+function createQueryWrapper() {
+  const queryClient = createTestQueryClient();
+
+  function QueryWrapper({ children }: { children: ReactNode }) {
+    return createElement(QueryClientProvider, { client: queryClient }, children);
+  }
+
+  return QueryWrapper;
+}
 
 describe('pokemonQueryKeys', () => {
   it('builds stable root, results, and details keys', () => {
@@ -56,5 +72,42 @@ describe('pokemon query error helpers', () => {
     expect(getPokemonDetailsErrorMessage(new Error('network'))).toBe(
       'Unable to load Pokemon details. Check your connection'
     );
+  });
+});
+
+describe('usePokemonDetailsQuery', () => {
+  it('loads pokemon details when id is provided', async () => {
+    mockFetchJsonSequence([
+      {
+        id: 25,
+        name: 'pikachu',
+        height: 4,
+        weight: 60,
+        types: [{ type: { name: 'electric' } }],
+      },
+    ]);
+
+    const { result } = renderHook(() => usePokemonDetailsQuery(25), {
+      wrapper: createQueryWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(result.current.data).toEqual({
+      id: 25,
+      name: 'pikachu',
+      description: 'Types: electric. Height: 4, weight: 60.',
+    });
+  });
+
+  it('stays idle when id is null', () => {
+    const { result } = renderHook(() => usePokemonDetailsQuery(null), {
+      wrapper: createQueryWrapper(),
+    });
+
+    expect(result.current.fetchStatus).toBe('idle');
+    expect(result.current.data).toBeUndefined();
   });
 });
