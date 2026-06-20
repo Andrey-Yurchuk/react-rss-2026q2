@@ -2,7 +2,7 @@
 
 ## RS School React course project
 
-Vite + React + TypeScript Pokedex browser for the RS School **API querying in React** task.
+Next.js + React + TypeScript Pokedex browser for the RS School **API querying in React** task.
 
 **PokeAPI** powers paginated search and a master–detail split view. **TanStack Query** handles API fetching, caching, and cache TTL for server state. **Zustand** stores user-selected Pokemon and survives page changes and SPA navigation. A sticky **flyout** shows the selected count with **Unselect all** and **Download CSV** actions (native `Blob` + `URL.createObjectURL`, filename like `N_items.csv`). **React Context API** controls light/dark theme via a top-level toggle, with the choice persisted to `localStorage`.
 
@@ -10,7 +10,8 @@ Vite + React + TypeScript Pokedex browser for the RS School **API querying in Re
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `VITE_QUERY_CACHE_TTL_MS` | Query cache TTL in milliseconds (`staleTime` and `gcTime` for TanStack Query) | `300000` (5 minutes) if unset or invalid |
+| `NEXT_PUBLIC_QUERY_CACHE_TTL_MS` | Query cache TTL in milliseconds (`staleTime` and `gcTime` for TanStack Query) | `300000` (5 minutes) if unset or invalid |
+| `NEXT_PUBLIC_BASE_PATH` | App base path for subpath deployments (e.g. GitHub Pages) | empty (root) |
 
 ### Routes
 
@@ -22,9 +23,9 @@ Vite + React + TypeScript Pokedex browser for the RS School **API querying in Re
 
 | Command | Description |
 |---------|-------------|
-| `npm run dev` | Local dev server |
-| `npm run build` | Production build |
-| `npm run preview` | Preview production build |
+| `npm run dev` | Local Next.js dev server |
+| `npm run build` | Production build (static export to `dist/`) |
+| `npm run start` | Start production server (when not using static export) |
 | `npm run test` | Unit tests (Vitest) |
 | `npm run test:coverage` | Tests with coverage (statements ≥ 80%) |
 | `npm run lint` | ESLint |
