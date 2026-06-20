@@ -6,7 +6,8 @@ import { ThemeProvider } from '../context/ThemeContext.tsx';
 import { AppRoutes } from '../routes/AppRoutes';
 import { createAppQueryClient } from '../services/queryClient.ts';
 
-const ROUTER_BASENAME = import.meta.env.BASE_URL.replace(/\/$/, '') || '/';
+const ROUTER_BASENAME =
+  (process.env.NEXT_PUBLIC_BASE_PATH ?? '').replace(/\/$/, '') || '/';
 const queryClient = createAppQueryClient();
 
 export default function App() {
