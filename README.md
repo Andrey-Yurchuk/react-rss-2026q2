@@ -2,34 +2,25 @@
 
 ## RS School React course project
 
-Next.js + React + TypeScript Pokedex browser for the RS School **API querying in React** task.
+Next.js App Router Pokedex browser (branch **`nextjs-ssr`**).
 
-**PokeAPI** powers paginated search and a master–detail split view. **TanStack Query** handles API fetching, caching, and cache TTL for server state. **Zustand** stores user-selected Pokemon and survives page changes and SPA navigation. A sticky **flyout** shows the selected count with **Unselect all** and **Download CSV** actions (native `Blob` + `URL.createObjectURL`, filename like `N_items.csv`). **React Context API** controls light/dark theme via a top-level toggle, with the choice persisted to `localStorage`.
+**PokeAPI** — paginated search, server-rendered results, details panel, selected items CSV download, i18n (`en` / `ru`), theme toggle.
 
 ### Environment
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `NEXT_PUBLIC_QUERY_CACHE_TTL_MS` | Query cache TTL in milliseconds (`staleTime` and `gcTime` for TanStack Query) | `300000` (5 minutes) if unset or invalid |
-| `NEXT_PUBLIC_BASE_PATH` | App base path for subpath deployments (e.g. GitHub Pages) | empty (root) |
+| `NEXT_PUBLIC_QUERY_CACHE_TTL_MS` | TanStack Query cache TTL (ms) | `300000` |
+| `NEXT_PUBLIC_BASE_PATH` | Base path for subpath deploy (e.g. GitHub Pages) | empty |
 
-### Routes
-
-- `/` — search and results (`?page=1`, `?page=2&details=25`)
-- `/about` — author and course links
-- unknown paths — 404 page (React Router catch-all)
+Set `NEXT_STATIC_EXPORT=1` for static export build only (no server actions / SSR at runtime).
 
 ### Scripts
 
 | Command | Description |
 |---------|-------------|
-| `npm run dev` | Local Next.js dev server |
-| `npm run build` | Production build (static export to `dist/`) |
-| `npm run start` | Start production server (when not using static export) |
-| `npm run test` | Unit tests (Vitest) |
-| `npm run test:coverage` | Tests with coverage (statements ≥ 80%) |
+| `npm run dev` | Dev server |
+| `npm run build` | Production build |
+| `npm run start` | Production server |
+| `npm run test` | Unit tests |
 | `npm run lint` | ESLint |
-
-Tooling: **ESLint**, **Prettier**, **Husky** (pre-commit: `lint`, pre-push: `test`).
-
-Active branch for this task: **`api-queries`**.
