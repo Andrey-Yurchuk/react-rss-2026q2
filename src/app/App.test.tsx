@@ -7,7 +7,6 @@ import { PokemonHomeTestHarness } from '../test-utils/pokemonHomeHarness.tsx';
 import { TestNavigationProbe } from '../components/TestNavigationProbe/index.ts';
 import { getNavigationSnapshot, subscribeNavigation } from '../hooks/navigationStore.ts';
 import { Link } from '../i18n/navigation.ts';
-import { NotFoundPage } from '../pages/NotFoundPage/index.ts';
 import { IntlTestProvider } from '../test-utils/intl.tsx';
 import { createConsoleErrorSpy } from '../test-utils/mocks';
 import { render, screen, within } from '../test-utils/render';
@@ -38,6 +37,21 @@ function MockAboutPage() {
       <a href="https://github.com/Andrey-Yurchuk">Andrey Yurchuk</a>
       <a href="https://rs.school/courses/reactjs">RS School ReactJS course</a>
       <Link href="/?page=1">Back to Pokemon search</Link>
+    </main>
+  );
+}
+
+function MockNotFoundPage() {
+  return (
+    <main className="static-page static-page--not-found">
+      <p className="static-page__eyebrow">404 error</p>
+      <h1>Page not found</h1>
+      <p className="static-page__lead">
+        The page you are looking for does not exist or has been moved
+      </p>
+      <Link className="static-page__home-link" href="/?page=1">
+        Back to Pokemon search
+      </Link>
     </main>
   );
 }
@@ -122,7 +136,7 @@ describe('App shell', () => {
   });
 
   it('exposes the theme toggle on the 404 page', () => {
-    renderShell(<NotFoundPage />);
+    renderShell(<MockNotFoundPage />);
 
     expect(
       screen.getByRole('heading', { name: /page not found/i })
@@ -167,7 +181,7 @@ describe('App shell', () => {
   });
 
   it('shows 404 page content', () => {
-    renderShell(<NotFoundPage />);
+    renderShell(<MockNotFoundPage />);
 
     expect(
       screen.getByRole('heading', { name: /page not found/i })
