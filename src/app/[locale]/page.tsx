@@ -1,4 +1,6 @@
 import { setRequestLocale } from 'next-intl/server';
+import { submitPokemonSearch } from './actions.ts';
+import { PokemonDetailsPanel } from '../../components/PokemonDetailsPanel/index.ts';
 import { PokemonHomeView } from '../../components/PokemonHomeView/index.ts';
 import { redirect } from '../../i18n/navigation.ts';
 import { getPokemonListErrorMessage } from '../../queries/pokemonQueries.ts';
@@ -22,6 +24,7 @@ export default async function HomePage({
   const { locale } = await params;
   const resolvedSearchParams = await searchParams;
   setRequestLocale(locale);
+  const searchAction = submitPokemonSearch.bind(null, locale);
 
   const normalizedParams = parseHomeSearchParams(resolvedSearchParams);
 
@@ -47,6 +50,17 @@ export default async function HomePage({
     errorMessage = getPokemonListErrorMessage(error);
   }
 
+  const detailsPanel =
+    normalizedParams.detailsId !== null ? (
+      <section className="pokemon-app__details-panel">
+        <PokemonDetailsPanel
+          detailsId={normalizedParams.detailsId}
+          page={normalizedParams.page}
+          query={normalizedParams.query}
+        />
+      </section>
+    ) : null;
+
   return (
     <PokemonHomeView
       page={normalizedParams.page}
@@ -55,6 +69,8 @@ export default async function HomePage({
       items={items}
       totalCount={totalCount}
       errorMessage={errorMessage}
+      searchAction={searchAction}
+      detailsPanel={detailsPanel}
     />
   );
 }

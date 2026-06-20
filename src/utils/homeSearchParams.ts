@@ -90,6 +90,14 @@ export function buildHomeSearchHref(
   return `/?${buildHomeSearchQueryString(options)}`;
 }
 
+export function buildLocalizedHomeSearchHref(
+  locale: string,
+  options: BuildHomeSearchHrefOptions
+): string {
+  const query = buildHomeSearchQueryString(options);
+  return `/${locale}?${query}`;
+}
+
 export function parseHomeSearchParamsFromHref(href: string): HomeSearchParams {
   const url = new URL(href, 'http://localhost');
   return parseHomeSearchParams({

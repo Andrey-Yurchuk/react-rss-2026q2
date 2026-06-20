@@ -7,7 +7,6 @@ import { useSelectedItemsStore } from '../../store/selectedItemsStore';
 import { seedLocalStorage } from '../../test-utils/mocks';
 import { TestNavigationProbe } from '../TestNavigationProbe/index.ts';
 import {
-  fireEvent,
   renderWithRouter,
   screen,
   waitFor,
@@ -168,32 +167,6 @@ describe('PokemonHomeView', () => {
     expect(localStorage.getItem(POKEMON_SEARCH_STORAGE_KEY)).toBeNull();
   });
 
-  it('manually refreshes the current results query', async () => {
-    loadPokemonResultsMock.mockResolvedValue({
-      items: [
-        {
-          id: 1,
-          name: 'bulbasaur',
-          description: 'Types: grass, poison. Height: 7, weight: 69.',
-        },
-      ],
-      totalCount: 40,
-    });
-
-    const user = userEvent.setup();
-    renderPokemonHome();
-
-    await waitFor(() => expect(loadPokemonResultsMock).toHaveBeenCalledWith('', 1));
-    expect(await screen.findByRole('heading', { name: 'bulbasaur' })).toBeInTheDocument();
-
-    expect(countResultsCalls('', 1)).toBe(1);
-
-    await user.click(screen.getByRole('button', { name: /refresh results/i }));
-
-    await waitFor(() => expect(countResultsCalls('', 1)).toBe(2));
-    expect(await screen.findByRole('heading', { name: 'bulbasaur' })).toBeInTheDocument();
-  });
-
   it('loads previous page results after navigating back', async () => {
     loadPokemonResultsMock.mockImplementation(async (_query, pageNum) => ({
       items: [
@@ -293,7 +266,6 @@ describe('PokemonHomeView', () => {
 
     await user.click(screen.getByRole('link', { name: /view details/i }));
 
-    expect(screen.getByText('Loading details…')).toBeInTheDocument();
     resolveDetails({
       id: 25,
       name: 'pikachu',
@@ -361,38 +333,6 @@ describe('PokemonHomeView', () => {
       .toBeInTheDocument();
 
     expect(await screen.findByText('Page 1 of 2')).toBeInTheDocument();
-  });
-
-  it('closes details when clicking the main results panel', async () => {
-    loadPokemonResultsMock.mockResolvedValue({
-      items: [
-        {
-          id: 25,
-          name: 'pikachu',
-          description: 'Types: electric. Height: 4, weight: 60.',
-        },
-      ],
-      totalCount: 40,
-    });
-    loadPokemonByIdMock.mockResolvedValue({
-      id: 25,
-      name: 'pikachu',
-      description: 'Types: electric. Height: 4, weight: 60.',
-    });
-
-    renderPokemonHome('/?page=2&details=25');
-
-    expect(await screen.findByText('Pokedex #25')).toBeInTheDocument();
-
-    fireEvent.click(
-      screen.getByRole('main', { name: /main pokemon results panel/i })
-    );
-
-    await waitFor(() =>
-      expect(screen.queryByRole('complementary', { name: /pokemon details/i })).not
-        .toBeInTheDocument()
-    );
-    expect(screen.getByTestId('current-location')).toHaveTextContent('/?page=2');
   });
 
   it('adds page=1 to the URL on first visit when page param is missing', async () => {

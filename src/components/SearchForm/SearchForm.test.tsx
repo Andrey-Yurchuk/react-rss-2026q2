@@ -9,7 +9,7 @@ import { SearchForm } from './SearchForm';
 
 describe('SearchForm', () => {
   it('renders search input and submit button', () => {
-    render(<SearchForm defaultQuery="" onSubmit={vi.fn()} />);
+    render(<SearchForm defaultQuery="" onSubmitClient={vi.fn()} />);
 
     expect(
       screen.getByLabelText(/search pok.mon by exact name/i)
@@ -20,18 +20,18 @@ describe('SearchForm', () => {
   it('hydrates search term from localStorage when URL query is empty', () => {
     seedLocalStorage(POKEMON_SEARCH_STORAGE_KEY, '  PiKaChu ');
 
-    render(<SearchForm defaultQuery="" onSubmit={vi.fn()} />);
+    render(<SearchForm defaultQuery="" onSubmitClient={vi.fn()} />);
 
     expect(
       screen.getByLabelText(/search pok.mon by exact name/i)
     ).toHaveValue('pikachu');
   });
 
-  it('calls onSubmit with normalized query when form is submitted', async () => {
+  it('calls onSubmitClient with normalized query when form is submitted', async () => {
     const user = userEvent.setup();
-    const onSubmit = vi.fn();
+    const onSubmitClient = vi.fn();
 
-    render(<SearchForm defaultQuery="" onSubmit={onSubmit} />);
+    render(<SearchForm defaultQuery="" onSubmitClient={onSubmitClient} />);
 
     await user.type(
       screen.getByLabelText(/search pok.mon by exact name/i),
@@ -39,18 +39,18 @@ describe('SearchForm', () => {
     );
     await user.click(screen.getByRole('button', { name: /search/i }));
 
-    expect(onSubmit).toHaveBeenCalledTimes(1);
-    expect(onSubmit).toHaveBeenCalledWith('pikachu');
+    expect(onSubmitClient).toHaveBeenCalledTimes(1);
+    expect(onSubmitClient).toHaveBeenCalledWith('pikachu');
   });
 
-  it('navigates through onSubmit callback with query params', async () => {
+  it('navigates through onSubmitClient callback with query params', async () => {
     const user = userEvent.setup();
     resetMockNavigation('/?page=1');
 
     render(
       <SearchForm
         defaultQuery=""
-        onSubmit={(normalizedQuery) => {
+        onSubmitClient={(normalizedQuery) => {
           resetMockNavigation(`/?page=1&query=${normalizedQuery}`);
         }}
       />

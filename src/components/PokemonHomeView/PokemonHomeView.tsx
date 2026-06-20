@@ -2,15 +2,11 @@
 
 import { useTranslations } from 'next-intl';
 import {
-  useCallback,
+  type ReactNode,
   useMemo,
   useState,
-  type MouseEvent,
 } from 'react';
-import { Link, useRouter } from '../../i18n/navigation.ts';
-import { POKEMON_SEARCH_STORAGE_KEY } from '../../constants';
-import { useLocalStorage } from '../../hooks/useLocalStorage';
-import { useAppSearchParams } from '../../hooks/useAppSearchParams.ts';
+import { Link } from '../../i18n/navigation.ts';
 import {
   type PokemonCardModel,
   totalPagesForCount,
@@ -21,14 +17,9 @@ import {
   serializeSelectedItemsToCsv,
 } from '../../utils/csv';
 import { downloadBlobAsFile } from '../../utils/downloadFile';
-import {
-  buildHomeSearchHref,
-  buildHomeSearchQueryString,
-} from '../../utils/homeSearchParams.ts';
 import { CardList } from '../CardList/index.ts';
 import { CrashOnRender } from '../CrashOnRender/index.ts';
 import { PaginationNav } from '../PaginationNav/index.ts';
-import { PokemonDetailsPanel } from '../PokemonDetailsPanel/index.ts';
 import { SearchForm } from '../SearchForm/index.ts';
 import { SelectedItemsFlyout } from '../SelectedItemsFlyout/index.ts';
 import '../../app/App.css';
@@ -40,6 +31,9 @@ export type PokemonHomeViewProps = {
   items: PokemonCardModel[];
   totalCount: number;
   errorMessage: string | null;
+  searchAction?: (formData: FormData) => void | Promise<void>;
+  onSearchSubmitClient?: (normalizedQuery: string) => void;
+  detailsPanel?: ReactNode;
 };
 
 export function PokemonHomeView({
@@ -49,13 +43,11 @@ export function PokemonHomeView({
   items,
   totalCount,
   errorMessage,
+  searchAction,
+  onSearchSubmitClient,
+  detailsPanel,
 }: PokemonHomeViewProps) {
   const t = useTranslations('PokemonApp');
-  const router = useRouter();
-  const { navigateToSearch } = useAppSearchParams();
-  const { write: writeSearchToStorage } = useLocalStorage(
-    POKEMON_SEARCH_STORAGE_KEY
-  );
   const [simulateCrash, setSimulateCrash] = useState(false);
 
   const hasDetails = detailsId !== null;
@@ -69,62 +61,14 @@ export function PokemonHomeView({
   const totalPages = totalPagesForCount(totalCount);
   const showPagination = errorMessage === null && items.length > 0;
 
-  const handleSearchSubmit = useCallback(
-    (normalizedQuery: string) => {
-      if (normalizedQuery === query && page === 1) {
-        return;
-      }
-
-      writeSearchToStorage(normalizedQuery);
-      router.push(
-        buildHomeSearchHref({
-          query: normalizedQuery,
-          page: 1,
-        })
-      );
-    },
-    [page, query, router, writeSearchToStorage]
-  );
-
-  const handleCloseDetails = useCallback(() => {
-    if (!hasDetails) {
-      return;
-    }
-
-    navigateToSearch(
-      buildHomeSearchQueryString({
-        query,
-        page,
-      })
-    );
-  }, [hasDetails, navigateToSearch, page, query]);
-
-  const handleListPanelClick = useCallback(
-    (event: MouseEvent<HTMLElement>) => {
-      const target = event.target;
-      if (!(target instanceof HTMLElement)) {
-        return;
-      }
-      if (target.closest('a, button, input, select, textarea, [role="button"]')) {
-        return;
-      }
-      handleCloseDetails();
-    },
-    [handleCloseDetails]
-  );
-
-  const handleRefreshResults = useCallback(() => {
-    router.refresh();
-  }, [router]);
-
-  const handleDownloadSelected = useCallback(() => {
+  const handleDownloadSelected = () => {
     if (selectedItems.length === 0) {
       return;
     }
     const csv = serializeSelectedItemsToCsv(selectedItems);
     const filename = buildSelectedItemsFilename(selectedItems.length);
     downloadBlobAsFile(csv, filename, 'text/csv;charset=utf-8');
-  }, [selectedItems]);
+  };
 
   const containerClassName = useMemo(
     () =>
@@ -166,30 +110,22 @@ export function PokemonHomeView({
         <main
           className="pokemon-app__list-panel"
           aria-label={t('mainPanelLabel')}
-          onClick={handleListPanelClick}
         >
           <section
             className="pokemon-app__search-section"
             aria-label={t('searchSectionLabel')}
           >
-            <SearchForm defaultQuery={query} onSubmit={handleSearchSubmit} />
+            <SearchForm
+              defaultQuery={query}
+              action={searchAction}
+              onSubmitClient={onSearchSubmitClient}
+            />
           </section>
 
           <section
             className="pokemon-app__results-section"
             aria-label={t('resultsSectionLabel')}
           >
-            <div className="pokemon-app__results-toolbar">
-              <button
-                type="button"
-                className="pokemon-app__refresh-button"
-                aria-label={t('refreshResultsAria')}
-                onClick={handleRefreshResults}
-              >
-                {t('refreshResults')}
-              </button>
-            </div>
-
             {errorMessage ? (
               <p className="results__error" role="alert">
                 {errorMessage}
@@ -216,15 +152,7 @@ export function PokemonHomeView({
           </section>
         </main>
 
-        {hasDetails ? (
-          <section className="pokemon-app__details-panel">
-            <PokemonDetailsPanel
-              detailsId={detailsId}
-              page={page}
-              query={query}
-            />
-          </section>
-        ) : null}
+        {hasDetails ? detailsPanel : null}
       </div>
 
       <div className="pokemon-app__footer">

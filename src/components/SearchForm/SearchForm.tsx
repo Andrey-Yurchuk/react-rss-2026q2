@@ -8,13 +8,18 @@ import { normalizeQueryParam } from '../../utils/homeSearchParams.ts';
 
 export type SearchFormProps = {
   defaultQuery?: string;
-  onSubmit?: (normalizedQuery: string) => void;
+  action?: (formData: FormData) => void | Promise<void>;
+  onSubmitClient?: (normalizedQuery: string) => void;
 };
 
-export function SearchForm({ defaultQuery = '', onSubmit }: SearchFormProps) {
+export function SearchForm({
+  defaultQuery = '',
+  action,
+  onSubmitClient,
+}: SearchFormProps) {
   const t = useTranslations('Search');
   const inputRef = useRef<HTMLInputElement>(null);
-  const { read } = useLocalStorage(POKEMON_SEARCH_STORAGE_KEY);
+  const { read, write } = useLocalStorage(POKEMON_SEARCH_STORAGE_KEY);
   const hydratedRef = useRef(false);
 
   useEffect(() => {
@@ -31,13 +36,19 @@ export function SearchForm({ defaultQuery = '', onSubmit }: SearchFormProps) {
   }, [defaultQuery, read]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    if (!onSubmit) {
+    const normalizedQuery = normalizeQueryParam(inputRef.current?.value ?? '');
+    write(normalizedQuery);
+
+    if (inputRef.current) {
+      inputRef.current.value = normalizedQuery;
+    }
+
+    if (!onSubmitClient) {
       return;
     }
 
     event.preventDefault();
-    const rawValue = inputRef.current?.value ?? '';
-    onSubmit(normalizeQueryParam(rawValue));
+    onSubmitClient(normalizedQuery);
   };
 
   return (
@@ -45,7 +56,7 @@ export function SearchForm({ defaultQuery = '', onSubmit }: SearchFormProps) {
       <label className="search__label" htmlFor="pokemon-search-input">
         {t('label')}
       </label>
-      <form className="search__row" method="get" onSubmit={handleSubmit}>
+      <form className="search__row" action={action} onSubmit={handleSubmit}>
         <input
           id="pokemon-search-input"
           ref={inputRef}

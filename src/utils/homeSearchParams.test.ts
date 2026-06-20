@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildHomeSearchHref,
+  buildLocalizedHomeSearchHref,
   buildHomeSearchQueryString,
   hasPageSearchParam,
   normalizeQueryParam,
@@ -99,6 +100,17 @@ describe('buildHomeSearchHref', () => {
         page: 1,
       })
     ).toBe('/?page=1&query=pikachu');
+  });
+});
+
+describe('buildLocalizedHomeSearchHref', () => {
+  it('builds locale-prefixed home hrefs', () => {
+    expect(
+      buildLocalizedHomeSearchHref('ru', {
+        query: 'pikachu',
+        page: 1,
+      })
+    ).toBe('/ru?page=1&query=pikachu');
   });
 });
 
