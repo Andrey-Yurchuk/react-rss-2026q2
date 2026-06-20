@@ -8,12 +8,12 @@ import {
 } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactElement } from 'react';
-import { MemoryRouter } from 'react-router-dom';
 import { createTestQueryClient } from './queryClient.ts';
 import { IntlTestProvider } from './intl.tsx';
+import { resetMockNavigation } from './navigationStore.ts';
 
-export type RenderWithRouterOptions = {
-  route?: string;
+export type RenderWithNavigationOptions = {
+  href?: string;
   queryClient?: QueryClient;
 };
 
@@ -34,18 +34,18 @@ export function renderUi(
   );
 }
 
-export function renderWithRouter(
+export function renderWithNavigation(
   ui: ReactElement,
   {
-    route = '/?page=1',
+    href = '/?page=1',
     queryClient = createTestQueryClient(),
-  }: RenderWithRouterOptions = {}
+  }: RenderWithNavigationOptions = {}
 ) {
+  resetMockNavigation(href);
+
   return render(
     <IntlTestProvider>
-      <QueryClientProvider client={queryClient}>
-        <MemoryRouter initialEntries={[route]}>{ui}</MemoryRouter>
-      </QueryClientProvider>
+      <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
     </IntlTestProvider>
   );
 }
@@ -58,3 +58,4 @@ export {
   fireEvent,
 };
 export { renderUi as render };
+export { renderWithNavigation as renderWithRouter };

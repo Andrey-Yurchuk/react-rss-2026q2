@@ -1,9 +1,11 @@
 import userEvent from '@testing-library/user-event';
-import { Route, Routes, useLocation } from 'react-router-dom';
+import { useSyncExternalStore } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { POKEAPI_POKEMON_URL, POKEMON_SEARCH_STORAGE_KEY } from '../../constants';
+import { getNavigationSnapshot, subscribeNavigation } from '../../hooks/navigationStore.ts';
 import { useSelectedItemsStore } from '../../store/selectedItemsStore';
 import { seedLocalStorage } from '../../test-utils/mocks';
+import { TestNavigationProbe } from '../TestNavigationProbe/index.ts';
 import {
   fireEvent,
   renderWithRouter,
@@ -11,7 +13,6 @@ import {
   waitFor,
 } from '../../test-utils/render';
 import { AboutPage } from '../../pages/AboutPage/index.ts';
-import { PokemonDetailsPanel } from '../PokemonDetailsPanel/index.ts';
 import { PokemonApp } from './PokemonApp';
 
 vi.mock('../../services/pokemonApi', async (importOriginal) => {
@@ -38,6 +39,16 @@ function countResultsCalls(query: string, page: number) {
   ).length;
 }
 
+function TestHomeAboutSwitch() {
+  const { pathname } = useSyncExternalStore(
+    subscribeNavigation,
+    getNavigationSnapshot,
+    getNavigationSnapshot
+  );
+
+  return pathname === '/about' ? <AboutPage /> : <PokemonApp />;
+}
+
 beforeEach(() => {
   loadPokemonResultsMock.mockReset();
   loadPokemonByIdMock.mockReset();
@@ -45,41 +56,23 @@ beforeEach(() => {
   localStorage.removeItem(POKEMON_SEARCH_STORAGE_KEY);
 });
 
-function renderPokemonApp(route = '/?page=1') {
-  return renderWithRouter(<PokemonApp />, { route });
-}
-
-function LocationProbe() {
-  const location = useLocation();
-  return <p data-testid="current-location">{location.pathname}{location.search}</p>;
-}
-
-function renderPokemonAppRoutes(route = '/?page=1') {
+function renderPokemonApp(href = '/?page=1') {
   return renderWithRouter(
     <>
-      <Routes>
-        <Route path="/" element={<PokemonApp />}>
-          <Route index element={<PokemonDetailsPanel />} />
-        </Route>
-      </Routes>
-      <LocationProbe />
+      <PokemonApp />
+      <TestNavigationProbe />
     </>,
-    { route }
+    { href }
   );
 }
 
-function renderPokemonAppWithAboutRoute(route = '/?page=1') {
+function renderPokemonAppWithAboutSwitch(href = '/?page=1') {
   return renderWithRouter(
     <>
-      <Routes>
-        <Route path="/" element={<PokemonApp />}>
-          <Route index element={<PokemonDetailsPanel />} />
-        </Route>
-        <Route path="/about" element={<AboutPage />} />
-      </Routes>
-      <LocationProbe />
+      <TestHomeAboutSwitch />
+      <TestNavigationProbe />
     </>,
-    { route }
+    { href }
   );
 }
 
@@ -347,7 +340,7 @@ describe('PokemonApp', () => {
   });
   });
 
-  it('opens details in the Outlet and closes them while preserving the page', async () => {
+  it('opens details in the details panel and closes them while preserving the page', async () => {
     const user = userEvent.setup();
     loadPokemonResultsMock.mockResolvedValue({
       items: [
@@ -370,7 +363,7 @@ describe('PokemonApp', () => {
       })
     );
 
-    renderPokemonAppRoutes('/?page=2');
+    renderPokemonApp('/?page=2');
 
     expect(screen.queryByRole('complementary', { name: /pokemon details/i })).not
       .toBeInTheDocument();
@@ -416,7 +409,7 @@ describe('PokemonApp', () => {
       description: 'Types: grass, poison. Height: 7, weight: 69.',
     });
 
-    renderPokemonAppRoutes('/?page=1&details=1');
+    renderPokemonApp('/?page=1&details=1');
 
     expect(await screen.findByText('Pokedex #1')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /next/i }));
@@ -461,7 +454,7 @@ describe('PokemonApp', () => {
       totalCount: 40,
     });
 
-    renderPokemonAppRoutes('/?page=2');
+    renderPokemonApp('/?page=2');
 
     await screen.findByRole('heading', { name: 'pokemon-2' });
     await user.type(screen.getByLabelText(/search pok.mon by exact name/i), 'a');
@@ -488,7 +481,7 @@ describe('PokemonApp', () => {
       description: 'Types: electric. Height: 4, weight: 60.',
     });
 
-    renderPokemonAppRoutes('/?page=2&details=25');
+    renderPokemonApp('/?page=2&details=25');
 
     expect(await screen.findByText('Pokedex #25')).toBeInTheDocument();
 
@@ -506,7 +499,7 @@ describe('PokemonApp', () => {
   it('adds page=1 to the URL on first visit when page param is missing', async () => {
     loadPokemonResultsMock.mockResolvedValue({ items: [], totalCount: 0 });
 
-    renderPokemonAppRoutes('/');
+    renderPokemonApp('/');
 
     await waitFor(() =>
       expect(screen.getByTestId('current-location')).toHaveTextContent('/?page=1')
@@ -526,7 +519,7 @@ describe('PokemonApp', () => {
       totalCount: 1,
     });
 
-    renderPokemonAppRoutes('/?page=1');
+    renderPokemonApp('/?page=1');
 
     expect(await screen.findByRole('heading', { name: 'pikachu' })).toBeInTheDocument();
     expect(useSelectedItemsStore.getState().selectedItems).toEqual([]);
@@ -566,7 +559,7 @@ describe('PokemonApp', () => {
       description: 'Types: electric. Height: 4, weight: 60.',
     });
 
-    renderPokemonAppRoutes('/?page=1');
+    renderPokemonApp('/?page=1');
 
     await screen.findByRole('heading', { name: 'pikachu' });
     await user.click(
@@ -596,7 +589,7 @@ describe('PokemonApp', () => {
       totalCount: 40,
     }));
 
-    renderPokemonAppRoutes('/?page=1');
+    renderPokemonApp('/?page=1');
 
     expect(await screen.findByRole('heading', { name: 'pokemon-1' })).toBeInTheDocument();
     await user.click(screen.getByRole('checkbox', { name: /select pokemon-1/i }));
@@ -634,7 +627,7 @@ describe('PokemonApp', () => {
       description: 'Types: electric. Height: 4, weight: 60.',
     });
 
-    renderPokemonAppRoutes('/?page=1');
+    renderPokemonApp('/?page=1');
 
     await screen.findByRole('heading', { name: 'pikachu' });
     await user.click(screen.getByRole('checkbox', { name: /select pikachu/i }));
@@ -678,7 +671,7 @@ describe('PokemonApp', () => {
       totalCount: 2,
     });
 
-    renderPokemonAppRoutes('/?page=1');
+    renderPokemonApp('/?page=1');
 
     await screen.findByRole('heading', { name: 'pikachu' });
     expect(
@@ -726,7 +719,7 @@ describe('PokemonApp', () => {
       totalCount: 1,
     });
 
-    renderPokemonAppWithAboutRoute('/?page=1');
+    renderPokemonAppWithAboutSwitch('/?page=1');
 
     await screen.findByRole('heading', { name: 'pikachu' });
     await user.click(screen.getByRole('checkbox', { name: /select pikachu/i }));
@@ -778,7 +771,7 @@ describe('PokemonApp', () => {
       .spyOn(HTMLAnchorElement.prototype, 'click')
       .mockImplementation(() => undefined);
 
-    renderPokemonAppRoutes('/?page=1');
+    renderPokemonApp('/?page=1');
 
     await screen.findByRole('heading', { name: 'pikachu' });
     await user.click(screen.getByRole('checkbox', { name: /select pikachu/i }));

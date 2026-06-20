@@ -1,7 +1,9 @@
+'use client';
+
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { useCallback } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useAppSearchParams } from '../../hooks/useAppSearchParams.ts';
 import {
   pokemonQueryKeys,
   usePokemonDetailsQuery,
@@ -13,8 +15,7 @@ export function PokemonDetailsPanel() {
   const t = useTranslations('DetailsPanel');
   const tErrors = useTranslations('Errors');
   const queryClient = useQueryClient();
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+  const { searchParams, navigateToSearch } = useAppSearchParams();
   const page = parsePageParam(searchParams.get('page'));
   const parsedId = Number(searchParams.get('details'));
   const detailsId =
@@ -35,7 +36,7 @@ export function PokemonDetailsPanel() {
   const details = detailsQuery.data;
 
   const handleClose = () => {
-    navigate({ pathname: '/', search: `?page=${page}` });
+    navigateToSearch(`page=${page}`);
   };
 
   const handleRefreshDetails = useCallback(async () => {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Link } from 'react-router-dom';
+import { Link } from '../../i18n/navigation.ts';
 import '../../app/App.css';
 
 export function AboutPage() {
@@ -43,7 +43,7 @@ export function AboutPage() {
         </p>
       </section>
 
-      <Link className="static-page__home-link" to="/?page=1">
+      <Link className="static-page__home-link" href="/?page=1">
         {t('backHome')}
       </Link>
     </main>

@@ -1,3 +1,5 @@
+'use client';
+
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import {
@@ -8,8 +10,9 @@ import {
   useState,
   type MouseEvent,
 } from 'react';
-import { Link, Outlet, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link } from '../../i18n/navigation.ts';
 import { POKEMON_SEARCH_STORAGE_KEY } from '../../constants';
+import { useAppSearchParams } from '../../hooks/useAppSearchParams.ts';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 import {
   pokemonQueryKeys,
@@ -26,6 +29,7 @@ import { parsePageParam } from '../../utils/urlParams';
 import { CardList } from '../CardList/index.ts';
 import { CrashOnRender } from '../CrashOnRender/index.ts';
 import { Pagination } from '../Pagination/index.ts';
+import { PokemonDetailsPanel } from '../PokemonDetailsPanel/index.ts';
 import { Search } from '../Search/index.ts';
 import { SelectedItemsFlyout } from '../SelectedItemsFlyout/index.ts';
 import '../../app/App.css';
@@ -35,8 +39,7 @@ export function PokemonApp() {
   const tErrors = useTranslations('Errors');
   const queryClient = useQueryClient();
   const { write: writeSearchToStorage } = useLocalStorage(POKEMON_SEARCH_STORAGE_KEY);
-  const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
+  const { searchParams, setSearchParams, navigateToSearch } = useAppSearchParams();
   const shouldPersistRef = useRef(false);
   const lastSubmittedQueryRef = useRef<string | null>(null);
 
@@ -81,14 +84,11 @@ export function PokemonApp() {
     if (searchParams.has('page')) {
       return;
     }
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev);
-        next.set('page', '1');
-        return next;
-      },
-      { replace: true }
-    );
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('page', '1');
+      return next;
+    });
   }, [searchParams, setSearchParams]);
 
   useEffect(() => {
@@ -128,14 +128,11 @@ export function PokemonApp() {
       if (searchParams.get('page') === '1') {
         return;
       }
-      setSearchParams(
-        (prev) => {
-          const next = new URLSearchParams(prev);
-          next.set('page', '1');
-          return next;
-        },
-        { replace: true }
-      );
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.set('page', '1');
+        return next;
+      });
     },
     [searchParams, setSearchParams]
   );
@@ -150,14 +147,11 @@ export function PokemonApp() {
     }
     shouldPersistRef.current = true;
     if (searchParams.get('page') !== '1') {
-      setSearchParams(
-        (prev) => {
-          const next = new URLSearchParams(prev);
-          next.set('page', '1');
-          return next;
-        },
-        { replace: true }
-      );
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.set('page', '1');
+        return next;
+      });
     }
     setSubmittedQuery(normalized);
   }, [searchInput, searchParams, setSearchParams]);
@@ -171,27 +165,24 @@ export function PokemonApp() {
           next.set('details', String(selectedId));
         }
         return next;
-      });
+      }, { replace: false });
     },
     [hasDetails, selectedId, setSearchParams]
   );
 
   const handleCardSelect = useCallback(
     (id: number) => {
-      navigate({
-        pathname: '/',
-        search: `?page=${page}&details=${id}`,
-      });
+      navigateToSearch(`page=${page}&details=${id}`);
     },
-    [navigate, page]
+    [navigateToSearch, page]
   );
 
   const handleCloseDetails = useCallback(() => {
     if (!hasDetails) {
       return;
     }
-    navigate({ pathname: '/', search: `?page=${page}` });
-  }, [hasDetails, navigate, page]);
+    navigateToSearch(`page=${page}`);
+  }, [hasDetails, navigateToSearch, page]);
 
   const handleListPanelClick = useCallback(
     (event: MouseEvent<HTMLElement>) => {
@@ -261,7 +252,7 @@ export function PokemonApp() {
           </p>
         </div>
         <nav className="pokemon-app__nav" aria-label={t('navLabel')}>
-          <Link className="pokemon-app__nav-link" to="/about">
+          <Link className="pokemon-app__nav-link" href="/about">
             {t('about')}
           </Link>
         </nav>
@@ -339,7 +330,7 @@ export function PokemonApp() {
 
         {hasDetails ? (
           <section className="pokemon-app__details-panel">
-            <Outlet />
+            <PokemonDetailsPanel />
           </section>
         ) : null}
       </div>

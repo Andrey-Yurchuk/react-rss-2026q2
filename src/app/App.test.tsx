@@ -1,13 +1,17 @@
 import userEvent from '@testing-library/user-event';
+import { useSyncExternalStore } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppProviders } from '../components/AppProviders/index.ts';
 import { AppShell } from '../components/AppShell/index.ts';
-import { MemoryRouter } from 'react-router-dom';
-import { AppRoutes } from '../routes/AppRoutes';
+import { PokemonApp } from '../components/PokemonApp/index.ts';
+import { TestNavigationProbe } from '../components/TestNavigationProbe/index.ts';
+import { getNavigationSnapshot, subscribeNavigation } from '../hooks/navigationStore.ts';
+import { AboutPage } from '../pages/AboutPage/index.ts';
+import { NotFoundPage } from '../pages/NotFoundPage/index.ts';
 import { IntlTestProvider } from '../test-utils/intl.tsx';
 import { createConsoleErrorSpy } from '../test-utils/mocks';
 import { render, screen, within } from '../test-utils/render';
-import App from './App';
+import { resetMockNavigation } from '../test-utils/navigationStore.ts';
 
 vi.mock('../services/pokemonApi', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../services/pokemonApi')>();
@@ -17,21 +21,39 @@ vi.mock('../services/pokemonApi', async (importOriginal) => {
   };
 });
 
-function renderApp() {
+function TestHomeAboutSwitch() {
+  const { pathname } = useSyncExternalStore(
+    subscribeNavigation,
+    getNavigationSnapshot,
+    getNavigationSnapshot
+  );
+
+  return pathname === '/about' ? <AboutPage /> : <PokemonApp />;
+}
+
+function renderShell(children: React.ReactNode) {
   return render(
     <IntlTestProvider>
       <AppProviders>
-        <AppShell>
-          <App />
-        </AppShell>
+        <AppShell>{children}</AppShell>
       </AppProviders>
     </IntlTestProvider>
   );
 }
 
-describe('App', () => {
+function renderHome(href = '/?page=1') {
+  resetMockNavigation(href);
+  return renderShell(
+    <>
+      <TestHomeAboutSwitch />
+      <TestNavigationProbe />
+    </>
+  );
+}
+
+describe('App shell', () => {
   beforeEach(() => {
-    window.history.replaceState({}, '', '/en');
+    resetMockNavigation('/?page=1');
   });
 
   afterEach(() => {
@@ -39,7 +61,7 @@ describe('App', () => {
   });
 
   it('renders the theme toggle at the top of the app shell', () => {
-    renderApp();
+    renderHome();
 
     const group = screen.getByRole('group', { name: /theme/i });
     expect(group).toBeInTheDocument();
@@ -49,7 +71,7 @@ describe('App', () => {
 
   it('switches the document theme when the user toggles dark mode', async () => {
     const user = userEvent.setup();
-    renderApp();
+    renderHome();
 
     await user.click(screen.getByRole('button', { name: /dark/i }));
 
@@ -62,16 +84,16 @@ describe('App', () => {
 
   it('keeps the theme toggle visible after navigating to /about', async () => {
     const user = userEvent.setup();
-    renderApp();
+    renderHome();
 
     await user.click(screen.getByRole('link', { name: /about/i }));
 
     expect(screen.getByRole('group', { name: /theme/i })).toBeInTheDocument();
   });
 
-  it('persists the selected theme across SPA navigation to /about', async () => {
+  it('persists the selected theme across navigation to /about', async () => {
     const user = userEvent.setup();
-    renderApp();
+    renderHome();
 
     await user.click(screen.getByRole('button', { name: /dark/i }));
     expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
@@ -88,10 +110,8 @@ describe('App', () => {
     expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
   });
 
-  it('exposes the theme toggle on the 404 page for unknown routes', () => {
-    window.history.replaceState({}, '', '/en/totally-unknown-route');
-
-    renderApp();
+  it('exposes the theme toggle on the 404 page', () => {
+    renderShell(<NotFoundPage />);
 
     expect(
       screen.getByRole('heading', { name: /page not found/i })
@@ -106,7 +126,7 @@ describe('App', () => {
     const user = userEvent.setup();
     const consoleErrorSpy = createConsoleErrorSpy();
 
-    renderApp();
+    renderHome();
     await user.click(
       screen.getByRole('button', { name: /trigger error \(error boundary\)/i })
     );
@@ -120,7 +140,7 @@ describe('App', () => {
   it('navigates to About page from the main app', async () => {
     const user = userEvent.setup();
 
-    renderApp();
+    renderHome();
     await user.click(screen.getByRole('link', { name: /about/i }));
 
     expect(
@@ -135,16 +155,8 @@ describe('App', () => {
     ).toHaveAttribute('href', 'https://rs.school/courses/reactjs');
   });
 
-  it('shows 404 page for unknown local routes', () => {
-    render(
-      <IntlTestProvider>
-        <AppProviders>
-          <MemoryRouter initialEntries={['/unknown-route']}>
-            <AppRoutes />
-          </MemoryRouter>
-        </AppProviders>
-      </IntlTestProvider>
-    );
+  it('shows 404 page content', () => {
+    renderShell(<NotFoundPage />);
 
     expect(
       screen.getByRole('heading', { name: /page not found/i })

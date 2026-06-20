@@ -1,5 +1,4 @@
 import userEvent from '@testing-library/user-event';
-import { Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   ApiRequestError,
@@ -11,6 +10,7 @@ import {
   screen,
   waitFor,
 } from '../../test-utils/render';
+import { TestNavigationProbe } from '../TestNavigationProbe/index.ts';
 import { PokemonDetailsPanel } from './PokemonDetailsPanel';
 
 vi.mock('../../services/pokemonApi', async (importOriginal) => {
@@ -27,20 +27,13 @@ function countDetailsCalls(id: number) {
   return loadPokemonByIdMock.mock.calls.filter(([actualId]) => actualId === id).length;
 }
 
-function LocationProbe() {
-  const location = useLocation();
-  return <p data-testid="current-location">{location.pathname}{location.search}</p>;
-}
-
-function renderDetailsPanel(route = '/?page=2&details=25', queryClient = createTestQueryClient()) {
+function renderDetailsPanel(href = '/?page=2&details=25', queryClient = createTestQueryClient()) {
   return renderWithRouter(
     <>
-      <Routes>
-        <Route path="/" element={<PokemonDetailsPanel />} />
-      </Routes>
-      <LocationProbe />
+      <PokemonDetailsPanel />
+      <TestNavigationProbe />
     </>,
-    { route, queryClient }
+    { href, queryClient }
   );
 }
 
@@ -229,13 +222,14 @@ describe('PokemonDetailsPanel', () => {
 
       const queryClient = createTestQueryClient();
       const panel = (
-        <Routes>
-          <Route path="/" element={<PokemonDetailsPanel />} />
-        </Routes>
+        <>
+          <PokemonDetailsPanel />
+          <TestNavigationProbe />
+        </>
       );
 
       const { unmount } = renderWithRouter(panel, {
-        route: '/?page=2&details=25',
+        href: '/?page=2&details=25',
         queryClient,
       });
 
@@ -244,7 +238,7 @@ describe('PokemonDetailsPanel', () => {
 
       unmount();
 
-      renderWithRouter(panel, { route: '/?page=2&details=25', queryClient });
+      renderWithRouter(panel, { href: '/?page=2&details=25', queryClient });
 
       expect(await screen.findByText('Pokedex #25')).toBeInTheDocument();
       expect(countDetailsCalls(25)).toBe(1);

@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Link } from 'react-router-dom';
+import { Link } from '../../i18n/navigation.ts';
 import '../../app/App.css';
 
 export function NotFoundPage() {
@@ -12,7 +12,7 @@ export function NotFoundPage() {
       <p className="static-page__eyebrow">{t('eyebrow')}</p>
       <h1>{t('title')}</h1>
       <p className="static-page__lead">{t('lead')}</p>
-      <Link className="static-page__home-link" to="/?page=1">
+      <Link className="static-page__home-link" href="/?page=1">
         {t('backHome')}
       </Link>
     </main>
