@@ -3,9 +3,9 @@
     "title": "react-rss-2026q2"
   },
   "Theme": {
-    "label": "Theme",
-    "light": "Light",
-    "dark": "Dark"
+    "label": "Тема",
+    "light": "Светлая",
+    "dark": "Тёмная"
   },
   "Language": {
     "label": "Language",

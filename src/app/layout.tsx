@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { AppProviders } from '../components/AppProviders/index.ts';
 import './App.css';
 import '../styles/index.css';
 
@@ -12,11 +11,5 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
-    <html lang="en">
-      <body>
-        <AppProviders>{children}</AppProviders>
-      </body>
-    </html>
-  );
+  return children;
 }

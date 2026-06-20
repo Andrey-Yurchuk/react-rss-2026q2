@@ -1,10 +1,17 @@
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Link } from '../../../i18n/navigation.ts';
+import { routing } from '../../../i18n/routing.ts';
+
+export const dynamic = 'force-static';
 
 type AboutRoutePageProps = {
   params: Promise<{ locale: string }>;
 };
+
+export function generateStaticParams() {
+  return routing.locales.map((locale) => ({ locale }));
+}
 
 export async function generateMetadata({
   params,

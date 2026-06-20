@@ -31,14 +31,17 @@ vi.mock('./i18n/navigation.ts', () => ({
     ),
   useRouter: () => ({
     replace: (href: string, options?: { locale?: string }) => {
+      const [pathPart, queryPart = ''] = href.split('?');
+
       if (options?.locale) {
-        const normalizedPath = href.startsWith('/') ? href : `/${href}`;
+        const normalizedPath = pathPart.startsWith('/') ? pathPart : `/${pathPart}`;
         const localePath =
           normalizedPath === '/'
             ? `/${options.locale}`
             : `/${options.locale}${normalizedPath}`;
-        const query = getNavigationSnapshot().searchParams.toString();
-        applyNavigationHref(query ? `${localePath}?${query}` : localePath);
+        applyNavigationHref(
+          queryPart ? `${localePath}?${queryPart}` : localePath
+        );
         return;
       }
 

@@ -1,8 +1,10 @@
-import { getTranslations } from 'next-intl/server';
+'use client';
+
+import { useTranslations } from 'next-intl';
 import { Link } from '../../i18n/navigation.ts';
 
-export default async function LocaleNotFoundPage() {
-  const t = await getTranslations('NotFoundPage');
+export default function LocaleNotFoundPage() {
+  const t = useTranslations('NotFoundPage');
 
   return (
     <main className="static-page static-page--not-found">
